@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState } from "react"; 
 import './App.css'
+import 'bootstrap/dist/css/bootstrap.min.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+
+import Header from "./components/layout/Header";
+import Hero from "./components/home/Hero";
+import Features from "./components/home/Features";
+import HowItWorks from "./components/home/HowItWorks";
+import PetTypes from "./components/home/PetTypes";
+import Footer from "./components/layout/Footer";
+import AuthModal from "./components/auth/AuthModal";
+
+// Main App Component
+const App = () => {
+  const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login' });
+
+  const openLogin = () => setAuthModal({ isOpen: true, mode: 'login' });
+  const openSignup = () => setAuthModal({ isOpen: true, mode: 'signup' });
+  const closeModal = () => setAuthModal({ isOpen: false, mode: 'login' });
+  const switchMode = () => setAuthModal(prev => ({ 
+    isOpen: true, 
+    mode: prev.mode === 'login' ? 'signup' : 'login' 
+  }));
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div className="min-h-screen bg-gray-50">
+      <Header onLogin={openLogin} onSignup={openSignup} />
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <PetTypes />
+      <Footer />
+      
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={closeModal}
+        mode={authModal.mode}
+        onSwitchMode={switchMode}
+      />
+    </div>
+  );
+};
 
-export default App
+export default App;
