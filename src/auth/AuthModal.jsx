@@ -25,35 +25,58 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
   if (!isOpen) return null;
 
   const handleSubmit = async () => {
+    console.log('handleSubmit called with mode:', mode);
+    console.log('formData:', formData);
+    
     setIsSubmitting(true);
     setMessage('');
 
     try {
       if (mode === 'login') {
+        console.log('Attempting login...');
         const response = await apiService.login(formData.email, formData.password);
+        console.log('Login response:', response);
+        
         if (response.success) {
+          console.log('Login successful, calling onAuthSuccess with user:', response.user);
+          setMessage('Login successful!');
           onAuthSuccess(response.user);
-          onClose();
+          setTimeout(() => {
+            console.log('Closing modal...');
+            onClose();
+          }, 1000);
         } else {
+          console.log('Login failed:', response.message);
           setMessage(response.message || 'Login failed');
         }
       } else {
+        console.log('Attempting signup...');
         const signupData = {
           ...formData,
           customerTypeId:
             formData.customerType === 'OWNER' ? 1 :
             formData.customerType === 'SITTER' ? 2 : 3
         };
+        console.log('Signup data:', signupData);
+        
         const response = await apiService.signup(signupData);
+        console.log('Signup response:', response);
+        
         if (response.success) {
+          console.log('Signup successful, calling onAuthSuccess with user:', response.user);
+          setMessage('Signup successful!');
           onAuthSuccess(response.user);
-          onClose();
+          setTimeout(() => {
+            console.log('Closing modal...');
+            onClose();
+          }, 1000);
         } else {
+          console.log('Signup failed:', response.message);
           setMessage(response.message || 'Signup failed');
         }
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error during auth:', err);
       setMessage('Server error. Please try again.');
     } finally {
       setIsSubmitting(false);

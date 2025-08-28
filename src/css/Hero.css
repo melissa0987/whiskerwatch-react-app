@@ -1,20 +1,23 @@
-/* Hero Section */
 .hero {
+  display: flex;
+  align-items: center;   
+  justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   text-align: center;
   padding: 4rem 1rem;
+  min-height: 60vh;     
 }
 
 .hero h1 {
-  font-size: 3rem;
-  font-weight: bold;
+  font-size: clamp(2.5rem, 5vw, 3.5rem); 
+  font-weight: 800;
   margin-bottom: 1rem;
   line-height: 1.2;
 }
 
 .hero p {
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 2vw, 1.25rem);
   margin-bottom: 2rem;
   opacity: 0.9;
   max-width: 600px;
@@ -27,4 +30,17 @@
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.hero-actions .btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  border-radius: 9999px; /* pill shape */
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
