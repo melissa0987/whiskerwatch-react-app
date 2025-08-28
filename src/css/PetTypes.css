@@ -1,0 +1,44 @@
+/* ===========================
+   PET TYPES SECTION
+   =========================== */
+.pet-types {
+  background: #ffffff;
+  padding: 5rem 2rem;
+  text-align: center;
+}
+
+.pet-types h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+.pet-types p {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-bottom: 2rem;
+}
+
+.pet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.pet-tag {
+  background: #dbeafe;
+  color: #1e3a8a;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: default;
+  transition: background 0.2s ease-in-out;
+}
+
+.pet-tag:hover {
+  background: #bfdbfe;
+}
+

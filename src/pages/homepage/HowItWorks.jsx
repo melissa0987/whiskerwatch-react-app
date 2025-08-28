@@ -1,4 +1,4 @@
- 
+ import '../../css/HowItWorks.css'; // Custom CSS
 
 const HowItWorks = () => {
   const steps = [

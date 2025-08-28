@@ -1,4 +1,5 @@
-import '../../css/Homepage.css'; // Custom CSS
+import '../../css/Hero.css'; // Custom CSS
+
  // Hero
 const Hero = () => (
   <section className="hero">

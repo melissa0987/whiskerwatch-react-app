@@ -1,0 +1,54 @@
+.features {
+  padding: 4rem 1rem;
+  background: white;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.features h2 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.features p {
+  font-size: 1.125rem;
+  color: #6b7280;
+  margin-bottom: 3rem;
+}
+
+/* Flex container for feature cards (like How It Works) */
+.feature-grid {
+  display: flex;
+  flex-wrap: wrap;           /* allow wrapping on smaller screens */
+  justify-content: center;    /* center cards horizontally */
+  gap: 2rem;
+}
+
+.feature-card {
+  flex: 1 1 250px;           /* flexible, min width 250px */
+  max-width: 280px;          /* prevent cards from growing too wide */
+  text-align: center;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  background: #f9fafb;
+}
+
+.feature-card h3 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 1rem 0 0.5rem;
+  color: #1f2937;
+}
+
+.feature-card p {
+  color: #6b7280;
+}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../css/Homepage.css'; // Custom CSS
+import '../css/AuthModal.css'; // Custom CSS
 
 const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiService }) => {
   const [formData, setFormData] = useState({
@@ -10,7 +10,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
     lastName: '',
     phoneNumber: '',
     address: '',
-    customerType: 'OWNER'
+    customerType: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);

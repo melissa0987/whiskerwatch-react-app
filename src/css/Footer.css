@@ -1,0 +1,53 @@
+/* ===========================
+   FOOTER SECTION
+   =========================== */
+.footer {
+  background: #111827;
+  color: #d1d5db;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.footer .container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.footer .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #fff;
+}
+
+.footer .logo svg {
+  margin-right: 0.5rem;
+}
+
+.footer p {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.footer .contact {
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.footer .contact div {
+  margin: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.footer .copyright {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
