@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../css/AuthModal.css'; // Custom CSS
 
-const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiService }) => {
+const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiService, defaultCustomerType }) => {
   const [formData, setFormData] = useState({
     userName: '',
     email: '',
@@ -10,8 +10,14 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
     lastName: '',
     phoneNumber: '',
     address: '',
-    customerType: ''
+    customerType: defaultCustomerType || '' 
   });
+
+  React.useEffect(() => {
+    if (isOpen && defaultCustomerType) {
+      setFormData(prev => ({ ...prev, customerType: defaultCustomerType }));
+    }
+  }, [isOpen, defaultCustomerType]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');

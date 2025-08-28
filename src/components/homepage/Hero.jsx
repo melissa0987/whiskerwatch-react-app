@@ -1,7 +1,6 @@
 import '../../css/Hero.css'; // Custom CSS
 
- // Hero
-const Hero = () => (
+const Hero = ({ onFindSitter, onBecomeSitter }) => (
   <section className="hero">
     <div className="container text-center">
       <h1>Professional Pet Care, Whenever You Need It</h1>
@@ -10,8 +9,12 @@ const Hero = () => (
         the love and care they deserve while you're away.
       </p>
       <div className="hero-actions">
-        <button className="btn btn-primary">Find a Pet Sitter</button>
-        <button className="btn btn-success">Become a Sitter</button>
+        <button className="btn btn-primary" onClick={onFindSitter}>
+          Find a Pet Sitter
+        </button>
+        <button className="btn btn-success" onClick={onBecomeSitter}>
+          Become a Sitter
+        </button>
       </div>
     </div>
   </section>
