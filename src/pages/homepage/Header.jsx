@@ -1,5 +1,5 @@
-import { PawPrint } from "lucide-react"; 
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { PawPrint } from "lucide-react";  
+import '../../css/Homepage.css'; // Custom CSS
 
 // Header
 const Header = ({ onLogin, onSignup }) => (

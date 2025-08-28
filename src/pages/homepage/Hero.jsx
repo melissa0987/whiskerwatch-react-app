@@ -1,4 +1,4 @@
- 
+import '../../css/Homepage.css'; // Custom CSS
  // Hero
 const Hero = () => (
   <section className="hero">
