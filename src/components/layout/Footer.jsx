@@ -8,10 +8,10 @@ const Footer = () => (
         <PawPrint size={24} color="#60a5fa" />
         Whisker Watch
       </div>
-      <p>Professional pet sitting services across the Greater Toronto Area.</p>
+      <p>Professional pet sitting services across Montreal.</p>
       <div className="contact">
         <div><Phone size={16} /> 1-800-WHISKER</div>
-        <div><MapPin size={16} /> Toronto, ON</div>
+        <div><MapPin size={16} /> Montreal, QC</div>
       </div>
       <p className="copyright">© 2025 Whisker Watch Pet Sitting Service. All rights reserved.</p>
     </div>
