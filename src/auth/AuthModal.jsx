@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import '../css/AuthModal.css'; // Custom CSS
 
 const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiService, defaultCustomerType }) => {
@@ -12,6 +13,9 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
     address: '',
     customerType: defaultCustomerType || '' 
   });
+
+  // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
 
   React.useEffect(() => {
     if (isOpen && defaultCustomerType) {
@@ -87,6 +91,10 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const isFormValid = () => {
     if (mode === 'login') return formData.email && formData.password;
     return formData.userName && formData.email && formData.password &&
@@ -105,20 +113,73 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
           {mode === 'signup' && (
             <>
               <div className="input-row">
-                <input type="text" name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleInputChange} />
-                <input type="text" name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleInputChange} />
+                <input 
+                  type="text" 
+                  name="firstName" 
+                  placeholder="First Name" 
+                  value={formData.firstName} 
+                  onChange={handleInputChange} 
+                />
+                <input 
+                  type="text" 
+                  name="lastName" 
+                  placeholder="Last Name" 
+                  value={formData.lastName} 
+                  onChange={handleInputChange} 
+                />
               </div>
-              <input type="text" name="userName" placeholder="Username" value={formData.userName} onChange={handleInputChange} />
+              <input 
+                type="text" 
+                name="userName" 
+                placeholder="Username" 
+                value={formData.userName} 
+                onChange={handleInputChange} 
+              />
             </>
           )}
 
-          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleInputChange} />
-          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleInputChange} />
+          <input 
+            type="email" 
+            name="email" 
+            placeholder="Email" 
+            value={formData.email} 
+            onChange={handleInputChange} 
+          />
+          
+          <div className="password-input-container">
+            <input 
+              type={showPassword ? "text" : "password"}
+              name="password" 
+              placeholder="Password" 
+              value={formData.password} 
+              onChange={handleInputChange}
+            />
+            <button 
+              type="button"
+              className="password-toggle-btn"
+              onClick={togglePasswordVisibility}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           {mode === 'signup' && (
             <>
-              <input type="tel" name="phoneNumber" placeholder="Phone Number" value={formData.phoneNumber} onChange={handleInputChange} />
-              <textarea name="address" placeholder="Address" value={formData.address} onChange={handleInputChange} rows="2" />
+              <input 
+                type="tel" 
+                name="phoneNumber" 
+                placeholder="Phone Number" 
+                value={formData.phoneNumber} 
+                onChange={handleInputChange} 
+              />
+              <textarea 
+                name="address" 
+                placeholder="Address" 
+                value={formData.address} 
+                onChange={handleInputChange} 
+                rows="2" 
+              />
               <select name="customerType" value={formData.customerType} onChange={handleInputChange}>
                 <option value="OWNER">Pet Owner</option>
                 <option value="SITTER">Pet Sitter</option>
@@ -129,7 +190,11 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
 
           {message && <div className="auth-message">{message}</div>}
 
-          <button className="submit-btn" disabled={!isFormValid() || isSubmitting} onClick={handleSubmit}>
+          <button 
+            className="submit-btn" 
+            disabled={!isFormValid() || isSubmitting} 
+            onClick={handleSubmit}
+          >
             {isSubmitting ? 'Processing...' : (mode === 'login' ? 'Login' : 'Sign Up')}
           </button>
         </div>

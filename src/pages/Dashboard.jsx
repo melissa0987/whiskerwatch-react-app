@@ -233,11 +233,12 @@ const Dashboard = ({ user, onLogout }) => {
           {activeTab === 'pets' && <MyPets {...componentProps} />}
           {activeTab === 'bookings' && <Bookings {...componentProps} />}
           {activeTab === 'profile' && (
-            <Profile 
-              {...componentProps} 
-              onEditProfile={handleEditProfile}
-            />
-          )}
+          <Profile 
+            user={currentUser} 
+            getCustomerTypeDisplay={getCustomerTypeDisplay} 
+            onEditProfile={handleEditProfile} 
+          />
+        )}
         </div>
       </div>
 

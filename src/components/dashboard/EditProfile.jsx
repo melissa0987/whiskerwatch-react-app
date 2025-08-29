@@ -10,6 +10,8 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
     };
   }, []);
 
+  
+
   // Parse existing address or set defaults
   const parseAddress = (address) => {
     if (!address) return { name: '', street: '', city: '', province: '', postalCode: '' };

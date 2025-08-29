@@ -279,3 +279,29 @@
   outline: 2px solid #007bff;
   outline-offset: 2px;
 }
+
+.password-field {
+  position: relative;
+} 
+
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-container input {
+  flex: 1;
+  padding-right: 40px; /* space for eye button */
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+}
