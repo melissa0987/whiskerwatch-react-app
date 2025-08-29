@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { PawPrint, Plus, Edit2, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import AddPetModal from "./AddPet";
+import EditPetModal from "./EditPet";
 import "../../css/dashboard/MyPets.css";
 
 const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedPet, setSelectedPet] = useState(null);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [petTypes, setPetTypes] = useState([]);
@@ -62,6 +65,19 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
     if (onRefreshPets) onRefreshPets(); // ensure refresh
   };
 
+  const handleEditPetSuccess = (successMessage) => {
+    showMessage(successMessage, "success");
+    setShowEditModal(false);
+    setSelectedPet(null);
+    if (onRefreshPets) onRefreshPets(); // ensure refresh
+  };
+
+  const handleEditPet = (pet) => {
+    console.log('Editing pet:', pet);
+    setSelectedPet(pet);
+    setShowEditModal(true);
+  };
+
   const handleDeletePet = async (petId, petName) => {
     if (!window.confirm(`Are you sure you want to delete ${petName}? This action cannot be undone.`)) return;
     
@@ -78,6 +94,11 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
       console.error("Error deleting pet:", error);
       showMessage("Network error. Please check your connection.", "error");
     }
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedPet(null);
   };
 
   return (
@@ -126,7 +147,11 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
               <div className="pet-card-header">
                 <h3 className="pet-name">{pet.name}</h3>
                 <div className="pet-actions">
-                  <button className="pet-btn btn-edit" title={`Edit ${pet.name}`}>
+                  <button 
+                    className="pet-btn btn-edit" 
+                    title={`Edit ${pet.name}`}
+                    onClick={() => handleEditPet(pet)}
+                  >
                     <Edit2 size={14} />
                   </button>
                   <button
@@ -164,6 +189,19 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
                     <strong>{pet.bookingsCount}</strong> booking{pet.bookingsCount !== 1 ? 's' : ''}
                   </div>
                 )}
+                {pet.isActive === false && (
+                  <div className="pet-inactive-badge" style={{
+                    padding: '4px 8px',
+                    backgroundColor: '#f8d7da',
+                    color: '#721c24',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    marginTop: '8px',
+                    textAlign: 'center'
+                  }}>
+                    Inactive
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -177,6 +215,16 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
         onSuccess={handleAddPetSuccess}
         userId={user.id}
         petTypes={petTypes}  
+      />
+
+      {/* Edit Pet Modal */}
+      <EditPetModal
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onSuccess={handleEditPetSuccess}
+        userId={user.id}
+        petTypes={petTypes}
+        pet={selectedPet}
       />
     </div>
   );
