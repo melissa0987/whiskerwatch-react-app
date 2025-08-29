@@ -1,6 +1,7 @@
 /* Header Styles */
 .header {
-  background: white;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
@@ -23,11 +24,13 @@
   gap: 0.5rem;
   font-size: 1.5rem;
   font-weight: bold;
-  color: #1f2937;
+  color: #f0f2f5;
 }
 
 .logo svg {
-  color: #3b82f6;
+  color: #eff1f3;
+  width: 5vh;
+  height: 5vh;
 }
 
 .header-actions {

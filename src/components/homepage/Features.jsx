@@ -1,5 +1,5 @@
 import { Shield, Heart, Calendar, MapPin } from "lucide-react";  
-import '../../css/Features.css'; // Custom CSS
+import '../../css/homepage/Features.css'; // Custom CSS
 
 // Features
 const Features = () => {

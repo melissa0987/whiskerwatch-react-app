@@ -148,122 +148,140 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
 
         <div className="auth-modal-body">
           <form onSubmit={handleSubmit}>
-            <div className="input-row">
-              <div>
+            <div className="form-section">
+              <div className="input-row">
+                <div className="form-field">
+                  <input 
+                    type="text" 
+                    name="firstName"
+                    placeholder="First Name"
+                    value={editForm.firstName}
+                    onChange={handleChange}
+                    className={errors.firstName ? 'error' : ''}
+                  />
+                  {errors.firstName && <div className="error-text">{errors.firstName}</div>}
+                </div>
+                <div className="form-field">
+                  <input 
+                    type="text" 
+                    name="lastName"
+                    placeholder="Last Name"
+                    value={editForm.lastName}
+                    onChange={handleChange}
+                    className={errors.lastName ? 'error' : ''}
+                  />
+                  {errors.lastName && <div className="error-text">{errors.lastName}</div>}
+                </div>
+              </div>
+
+              <div className="form-field">
                 <input 
                   type="text" 
-                  name="firstName"
-                  placeholder="First Name"
-                  value={editForm.firstName}
+                  name="userName"
+                  placeholder="Username"
+                  value={editForm.userName}
                   onChange={handleChange}
-                  className={errors.firstName ? 'error' : ''}
+                  className={errors.userName ? 'error' : ''}
                 />
-                {errors.firstName && <div className="error-text">{errors.firstName}</div>}
+                {errors.userName && <div className="error-text">{errors.userName}</div>}
               </div>
-              <div>
+
+              <div className="form-field">
                 <input 
-                  type="text" 
-                  name="lastName"
-                  placeholder="Last Name"
-                  value={editForm.lastName}
+                  type="email" 
+                  name="email"
+                  placeholder="Email"
+                  value={editForm.email}
                   onChange={handleChange}
-                  className={errors.lastName ? 'error' : ''}
+                  className={errors.email ? 'error' : ''}
                 />
-                {errors.lastName && <div className="error-text">{errors.lastName}</div>}
+                {errors.email && <div className="error-text">{errors.email}</div>}
               </div>
-            </div>
 
-            <div>
-              <input 
-                type="text" 
-                name="userName"
-                placeholder="Username"
-                value={editForm.userName}
-                onChange={handleChange}
-                className={errors.userName ? 'error' : ''}
-              />
-              {errors.userName && <div className="error-text">{errors.userName}</div>}
-            </div>
+              <div className="form-field">
+                <input 
+                  type="tel" 
+                  name="phoneNumber"
+                  placeholder="Phone Number"
+                  value={editForm.phoneNumber}
+                  onChange={handleChange}
+                  className={errors.phoneNumber ? 'error' : ''}
+                />
+                {errors.phoneNumber && <div className="error-text">{errors.phoneNumber}</div>}
+              </div>
 
-            <div>
-              <input 
-                type="email" 
-                name="email"
-                placeholder="Email"
-                value={editForm.email}
-                onChange={handleChange}
-                className={errors.email ? 'error' : ''}
-              />
-              {errors.email && <div className="error-text">{errors.email}</div>}
-            </div>
+              <div className="form-field">
+                <select 
+                  name="customerTypeId" 
+                  value={editForm.customerTypeId} 
+                  onChange={handleChange}
+                >
+                  <option value={1}>Pet Owner</option>
+                  <option value={2}>Pet Sitter</option>
+                  <option value={3}>Both</option>
+                </select>
+              </div>
 
-            <div>
-              <input 
-                type="tel" 
-                name="phoneNumber"
-                placeholder="Phone Number"
-                value={editForm.phoneNumber}
-                onChange={handleChange}
-                className={errors.phoneNumber ? 'error' : ''}
-              />
-              {errors.phoneNumber && <div className="error-text">{errors.phoneNumber}</div>}
+              <p>
+                Current account type: <strong>{getCustomerTypeDisplay(editForm.customerTypeId)}</strong>
+              </p>
             </div>
-
-            <select 
-              name="customerTypeId" 
-              value={editForm.customerTypeId} 
-              onChange={handleChange}
-            >
-              <option value={1}>Pet Owner</option>
-              <option value={2}>Pet Sitter</option>
-              <option value={3}>Both</option>
-            </select>
 
             {/* Address Section */}
-            <div style={{ marginTop: '16px', marginBottom: '8px' }}>
-              <strong>Address Details:</strong>
+            <div className="form-section">
+              <h4>Address Details</h4>
+              
+              <div className="form-field">
+                <input 
+                  type="text" 
+                  name="address.name"
+                  placeholder="Name/Building (optional)"
+                  value={editForm.address.name}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-field">
+                <input 
+                  type="text" 
+                  name="address.street"
+                  placeholder="Street Address"
+                  value={editForm.address.street}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="input-row">
+                <div className="form-field">
+                  <input 
+                    type="text" 
+                    name="address.city"
+                    placeholder="City"
+                    value={editForm.address.city}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-field">
+                  <input 
+                    type="text" 
+                    name="address.province"
+                    placeholder="Province"
+                    value={editForm.address.province}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="form-field">
+                <input 
+                  type="text" 
+                  name="address.postalCode"
+                  placeholder="Postal Code"
+                  value={editForm.address.postalCode}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
-            
-            <input 
-              type="text" 
-              name="address.name"
-              placeholder="Name/Building (optional)"
-              value={editForm.address.name}
-              onChange={handleChange}
-            />
-
-            <input 
-              type="text" 
-              name="address.street"
-              placeholder="Street Address"
-              value={editForm.address.street}
-              onChange={handleChange}
-            />
-
-            <div className="input-row">
-              <input 
-                type="text" 
-                name="address.city"
-                placeholder="City"
-                value={editForm.address.city}
-                onChange={handleChange}
-              />
-              <input 
-                type="text" 
-                name="address.province"
-                placeholder="Province"
-                value={editForm.address.province}
-                onChange={handleChange}
-              />
-            </div>
-
-            <input 
-              type="text" 
-              name="address.postalCode"
-              placeholder="Postal Code"
-              value={editForm.address.postalCode}
-              onChange={handleChange}
-            />
 
             {/* Address Preview */}
             {(editForm.address.street || editForm.address.city) && (
@@ -286,9 +304,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
         </div>
 
         <div className="auth-modal-footer">
-          <p>
-            Current account type: <strong>{getCustomerTypeDisplay(editForm.customerTypeId)}</strong>
-          </p>
+          
         </div>
       </div>
     </div>

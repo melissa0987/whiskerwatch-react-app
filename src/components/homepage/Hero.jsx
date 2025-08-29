@@ -1,4 +1,4 @@
-import '../../css/Hero.css'; // Custom CSS
+import '../../css/homepage/Hero.css'; // Custom CSS
 
 const Hero = ({ onFindSitter, onBecomeSitter }) => (
   <section className="hero">

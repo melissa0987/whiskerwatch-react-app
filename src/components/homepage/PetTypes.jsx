@@ -1,5 +1,5 @@
  
-import '../../css/PetTypes.css'; // Custom CSS
+import '../../css/homepage/PetTypes.css'; // Custom CSS
 
 const PetTypes = () => {
   const petTypes = [
