@@ -180,6 +180,18 @@ const Dashboard = ({ user, onLogout }) => {
       { id: 'bookings', label: 'Bookings', icon: Calendar }
     );
   }
+  const refreshPets = async () => {
+    if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+      try {
+        console.log('Refreshing pets for user:', currentUser.id);
+        const petsData = await apiService.getPetsByOwner(currentUser.id);
+        console.log('Refreshed pets data:', petsData);
+        setPets(petsData.success ? petsData.data : []);
+      } catch (error) {
+        console.error('Error refreshing pets:', error);
+      }
+    }
+  };
 
   // Component props object to avoid repetition
   const componentProps = {
@@ -193,8 +205,11 @@ const Dashboard = ({ user, onLogout }) => {
     formatDate,
     formatTime,
     onUpdateProfile: handleUpdateProfile,
-    onEditProfile: handleEditProfile
+    onEditProfile: handleEditProfile,
+    onRefreshPets: refreshPets
   };
+
+  
 
   console.log('Dashboard render - showEditModal:', showEditModal);
 
