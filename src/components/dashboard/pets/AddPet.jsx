@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { PawPrint, X } from "lucide-react";
-import "../../css/dashboard/MyPets.css";
+import "../../../css/dashboard/MyPets.css";
 
-const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => {
+const AddPetModal = ({ isOpen, onClose, onSuccess, userId, petTypes = [] }) => {
   const [formData, setFormData] = useState({
     name: "",
     age: "",
@@ -10,12 +10,10 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
     weight: "",
     specialInstructions: "",
     typeId: "1",
-    isActive: true
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  //fallback
   const defaultPetTypes = [
     { id: 1, name: "Dog" },
     { id: 2, name: "Cat" },
@@ -30,21 +28,6 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
   ];
 
   const availablePetTypes = petTypes.length > 0 ? petTypes : defaultPetTypes;
-
-  // Populate form when pet data changes
-  useEffect(() => {
-    if (pet && isOpen) {
-      setFormData({
-        name: pet.name || "",
-        age: pet.age ? pet.age.toString() : "",
-        breed: pet.breed || "",
-        weight: pet.weight ? pet.weight.toString() : "",
-        specialInstructions: pet.specialInstructions || "",
-        typeId: pet.typeId ? pet.typeId.toString() : "1",
-        isActive: pet.isActive !== undefined ? pet.isActive : true
-      });
-    }
-  }, [pet, isOpen]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -69,11 +52,8 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
   };
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -96,25 +76,21 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
         specialInstructions: formData.specialInstructions.trim() || null,
         ownerId: userId,
         typeId: parseInt(formData.typeId),
-        isActive: formData.isActive
       };
-
-      const petId = pet.petId || pet.id;
-      const response = await fetch(`http://localhost:8080/api/pets/${petId}`, {
-        method: "PUT",
+      const response = await fetch("http://localhost:8080/api/pets", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(petData),
       });
-
       if (response.ok) {
-        onSuccess(`${formData.name} updated successfully!`);
+        onSuccess("Pet added successfully!");
         handleClose();
       } else {
         const errorText = await response.text();
-        setErrors({ submit: errorText || "Failed to update pet" });
+        setErrors({ submit: errorText || "Failed to add pet" });
       }
     } catch (error) {
-      console.error("Error updating pet:", error);
+      console.error("Error adding pet:", error);
       setErrors({ submit: "Network error. Please check your connection." });
     } finally {
       setLoading(false);
@@ -129,13 +105,12 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
       weight: "",
       specialInstructions: "",
       typeId: "1",
-      isActive: true
     });
     setErrors({});
     onClose();
   };
 
-  if (!isOpen || !pet) return null;
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
@@ -143,8 +118,8 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title">
-            <PawPrint size={24} color="#17a2b8" />
-            <h3>Edit {pet.name}</h3>
+            <PawPrint size={24} color="#28a745" />
+            <h3>Add New Pet</h3>
           </div>
           <button className="close-btn" onClick={handleClose} disabled={loading}>
             <X size={20} color="#6c757d" />
@@ -252,20 +227,6 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
           />
         </div>
 
-        {/* Active Status */}
-        <div className="form-group">
-          <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="checkbox"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleInputChange}
-              disabled={loading}
-            />
-            Pet is active (available for bookings)
-          </label>
-        </div>
-
         {/* Submit Error */}
         {errors.submit && <div className="alert alert-error">{errors.submit}</div>}
 
@@ -274,25 +235,16 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
           <button className="btn btn-cancel" onClick={handleClose} disabled={loading}>
             Cancel
           </button>
-          <button 
-            className="btn btn-update" 
-            onClick={handleSubmit} 
-            disabled={loading}
-            style={{
-              backgroundColor: loading ? "#6c757d" : "#17a2b8",
-              color: "white",
-              border: "none"
-            }}
-          >
+          <button className="btn btn-submit" onClick={handleSubmit} disabled={loading}>
             {loading ? (
               <>
                 <div className="spinner" />
-                Updating...
+                Adding...
               </>
             ) : (
               <>
                 <PawPrint size={14} />
-                Update Pet
+                Add Pet
               </>
             )}
           </button>
@@ -302,4 +254,4 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
   );
 };
 
-export default EditPet ;
+export default AddPetModal;

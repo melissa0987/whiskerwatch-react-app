@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { PawPrint, Plus, Edit2, Trash2, CheckCircle, AlertCircle } from "lucide-react";
-import AddPetModal from "./AddPet";
-import EditPetModal from "./EditPet";
+import AddPetModal from "./pets/AddPet";
+import EditPetModal from "./pets/EditPet";
 import "../../css/dashboard/MyPets.css";
 
 const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {

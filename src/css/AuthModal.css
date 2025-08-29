@@ -1,110 +1,150 @@
-/* AuthModal */
+/* ===================================
+   AUTH MODAL COMPONENT STYLES
+   =================================== */
 
+/* Modal Overlay */
 .auth-modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease-out;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal Container */
 .auth-modal {
-  background-color: #fff;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 95%;
-  padding: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
+  background: #ffffff;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+  border: 1px solid #e5e7eb;
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal Header */
 .auth-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  padding: 1.5rem 1.5rem 0;
+  margin-bottom: 1rem;
+}
+
+.auth-modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
 }
 
 .close-btn {
   background: none;
   border: none;
   font-size: 1.5rem;
+  color: #6b7280;
   cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
 }
 
+.close-btn:hover {
+  color: #374151;
+  background: #f3f4f6;
+}
+
+/* Modal Body */
 .auth-modal-body {
+  padding: 0 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 1rem;
 }
 
+/* Input Rows */
 .input-row {
   display: flex;
-  gap: 10px;
+  gap: 1rem;
 }
 
-input, textarea, select {
+.input-row > * {
+  flex: 1;
+}
+
+/* Form Controls */
+.auth-modal input,
+.auth-modal textarea,
+.auth-modal select {
   width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  padding: 0.875rem;
   font-size: 0.95rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  outline: none;
+  background: #ffffff;
 }
 
-textarea {
-  resize: none;
+.auth-modal input:focus,
+.auth-modal textarea:focus,
+.auth-modal select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.submit-btn {
-  padding: 10px;
-  font-size: 1rem;
-  background-color: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 10px;
+.auth-modal input:invalid,
+.auth-modal textarea:invalid,
+.auth-modal select:invalid {
+  border-color: #ef4444;
 }
 
-.submit-btn:disabled {
-  background-color: #999;
-  cursor: not-allowed;
+.auth-modal textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
 }
 
-.auth-message {
-  padding: 8px;
-  font-size: 0.9rem;
-  border-radius: 4px;
-  color: #2563eb;
-  background-color: #dbeafe;
-}
-
-.auth-modal-footer {
-  margin-top: 10px;
-  text-align: center;
-}
-
-.auth-modal-footer button {
-  margin-left: 5px;
-  background: none;
-  border: none;
-  color: #2563eb;
-  cursor: pointer;
-}
-
-/* Add these styles to your existing AuthModal.css */
-
+/* Password Input Container */
 .password-input-container {
   position: relative;
   width: 100%;
 }
 
 .password-input-container input {
-  width: 100%;
-  padding-right: 45px; /* Make room for the toggle button */
+  padding-right: 45px;
 }
 
 .password-toggle-btn {
@@ -115,25 +155,142 @@ textarea {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: #6b7280;
   transition: color 0.2s ease;
+  border-radius: 0.25rem;
 }
 
 .password-toggle-btn:hover {
-  color: #333;
+  color: #374151;
+  background: #f3f4f6;
 }
 
 .password-toggle-btn:focus {
-  outline: 2px solid #007bff;
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
-/* Ensure the container maintains proper spacing */
-.auth-modal-body .password-input-container {
-  margin-bottom: 15px;
+/* Submit Button */
+.submit-btn {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+.submit-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Auth Message */
+.auth-message {
+  padding: 0.875rem;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  color: #1e40af;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 1px solid #93c5fd;
+  margin-top: 0.5rem;
+}
+
+.auth-message.error {
+  color: #dc2626;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border-color: #f87171;
+}
+
+.auth-message.success {
+  color: #059669;
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border-color: #86efac;
+}
+
+/* Modal Footer */
+.auth-modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  text-align: center;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 1.5rem;
+}
+
+.auth-modal-footer p {
+  margin: 0 0 0.5rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.auth-modal-footer button {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-modal-footer button:hover {
+  color: #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .auth-modal-overlay {
+    padding: 0.5rem;
+  }
+  
+  .auth-modal {
+    max-width: 100%;
+    border-radius: 0.75rem;
+  }
+  
+  .auth-modal-header {
+    padding: 1.25rem 1.25rem 0;
+  }
+  
+  .auth-modal-body {
+    padding: 0 1.25rem;
+  }
+  
+  .auth-modal-footer {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+  
+  .input-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .auth-modal input,
+  .auth-modal textarea,
+  .auth-modal select {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
 }

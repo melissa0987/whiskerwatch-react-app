@@ -1,0 +1,170 @@
+/* SittingRequestPage.css */
+
+/* Page Container */
+.sitting-request-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.sitting-request-header h1 {
+  font-size: 1.875rem; /* 3xl */
+  font-weight: 700;
+  color: #343a40; /* dashboard dark text */
+  margin-bottom: 0.5rem;
+}
+
+.sitting-request-header p {
+  color: #6c757d; /* gray-600 dashboard text */
+}
+
+/* Form Sections */
+.form-section {
+  background-color: #ffffff; /* white card */
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+/* Pet Selection */
+.pet-label {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #dee2e6; /* dashboard border */
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background-color: #f8f9fa;
+}
+
+.pet-label.selected {
+  border-color: #2563eb;
+  background-color: #e3f2fd;
+}
+
+.pet-label:hover {
+  border-color: #b6c2cf;
+}
+
+.pet-name {
+  font-weight: 500;
+  color: #343a40;
+}
+
+.pet-type {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+/* Error Messages */
+.error-text {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #dc3545;
+}
+
+/* Input & Select Fields */
+.input-field,
+.select-field,
+.textarea-field {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+  background-color: #ffffff;
+}
+
+.input-field:focus,
+.select-field:focus,
+.textarea-field:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1e40af;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Submit Message Box */
+.submit-message {
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: 8px;
+  border-width: 1px;
+  font-size: 14px;
+}
+
+.submit-message.success {
+  background-color: #e3f2fd;
+  color: #0c4a6e;
+  border-color: #a5d8ff;
+}
+
+.submit-message.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+
+/* Duration Box */
+.duration-box {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #e3f2fd;
+  border: 1px solid #a5d8ff;
+  color: #0c4a6e;
+  font-size: 14px;
+}
+
+/* Urgency Options */
+.urgency-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #343a40;
+}
+
+/* Responsive Grid Layout */
+@media (max-width: 768px) {
+  .form-section {
+    padding: 16px;
+  }
+
+  .pets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}

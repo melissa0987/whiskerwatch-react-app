@@ -11,6 +11,7 @@ import Bookings from '../components/dashboard/Bookings';
 import Profile from '../components/dashboard/Profile';
 import EditProfile from '../components/dashboard/EditProfile';
 import Footer from '../components/homepage/Footer';
+import SittingRequestPage from '../components/dashboard/SittingRequestPage'; 
 import '../css/Dashboard.css'; 
 
 const Dashboard = ({ user, onLogout }) => {
@@ -175,10 +176,11 @@ const Dashboard = ({ user, onLogout }) => {
 
   // Add pets and bookings tabs only if user is a pet owner
   if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
-    navigationItems.splice(1, 0, 
-      { id: 'pets', label: 'My Pets', icon: PawPrint },
-      { id: 'bookings', label: 'Bookings', icon: Calendar }
-    );
+    navigationItems.push(
+    { id: 'pets', label: 'My Pets', icon: PawPrint },
+    { id: 'bookings', label: 'Bookings', icon: Calendar },
+    { id: 'request', label: 'Request Sitting', icon: PawPrint }
+  );
   }
   const refreshPets = async () => {
     if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
@@ -247,6 +249,7 @@ const Dashboard = ({ user, onLogout }) => {
           {activeTab === 'overview' && <Overview {...componentProps} />}
           {activeTab === 'pets' && <MyPets {...componentProps} />}
           {activeTab === 'bookings' && <Bookings {...componentProps} />} 
+          {activeTab === 'request' && <SittingRequestPage {...componentProps} />}
           {activeTab === 'profile' && (
             <Profile 
               user={currentUser} 
