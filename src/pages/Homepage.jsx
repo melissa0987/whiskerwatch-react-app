@@ -1,298 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import '../../css/dashboard/EditProfile.css';
+import React, { useState } from 'react';
+import Header from "../components/homepage/Header"; 
+import AuthModal from "../auth/AuthModal";
+import Hero from "../components/homepage/Hero";
+import Features from "../components/homepage/Features";
+import HowItWorks from "../components/homepage/HowItWorks";
+import PetTypes from "../components/homepage/PetTypes";
+import Footer from "../components/homepage/Footer";
+import apiService from "../services/apiService";
 
-const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
-  // Add useEffect to manage body class for modal
-  useEffect(() => {
-    document.body.classList.add('modal-open');
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, []);
+const Homepage = ({ onAuthSuccess, currentUser, onLogout }) => { 
+  const [authModal, setAuthModal] = useState({ isOpen: false, mode: 'login', customerType: '' });
 
-  // Parse existing address or set defaults
-  const parseAddress = (address) => {
-    if (!address) return { name: '', street: '', city: '', province: '', postalCode: '' };
-    
-    // Try to parse existing address format: "Name, Street, City, Province PostalCode"
-    const parts = address.split(', ');
-    if (parts.length >= 3) {
-      const lastPart = parts[parts.length - 1]; // "Province PostalCode"
-      const lastSpaceIndex = lastPart.lastIndexOf(' ');
-      
-      return {
-        name: parts[0] || '',
-        street: parts[1] || '',
-        city: parts[2] || '',
-        province: lastSpaceIndex > 0 ? lastPart.substring(0, lastSpaceIndex) : '',
-        postalCode: lastSpaceIndex > 0 ? lastPart.substring(lastSpaceIndex + 1) : ''
-      };
-    }
-    
-    // If parsing fails, put everything in street field
-    return { name: '', street: address, city: '', province: '', postalCode: '' };
-  };
-
-  const [editForm, setEditForm] = useState({
-    firstName: user.firstName || '',
-    lastName: user.lastName || '',
-    userName: user.userName || '',
-    email: user.email || '',
-    phoneNumber: user.phoneNumber || '',
-    customerTypeId: user.customerTypeId || 1,
-    address: parseAddress(user.address)
-  });
-
-  const [errors, setErrors] = useState({});
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name.startsWith('address.')) {
-      const addressField = name.split('.')[1];
-      setEditForm(prev => ({
-        ...prev,
-        address: {
-          ...prev.address,
-          [addressField]: value
-        }
-      }));
-    } else {
-      setEditForm(prev => ({ ...prev, [name]: value }));
-    }
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!editForm.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!editForm.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!editForm.userName.trim()) newErrors.userName = 'Username is required';
-    if (!editForm.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(editForm.email)) {
-      newErrors.email = 'Email format is invalid';
-    }
-    
-    // Phone validation (optional but if provided, should be valid)
-    if (editForm.phoneNumber && !/^[+]?[\d\s\-()]{10,}$/.test(editForm.phoneNumber.replace(/\s/g, ''))) {
-      newErrors.phoneNumber = 'Please enter a valid phone number';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const formatAddress = (addressObj) => {
-    const { name, street, city, province, postalCode } = addressObj;
-    const parts = [name, street, city, `${province} ${postalCode}`.trim()].filter(part => part.trim());
-    return parts.join(', ');
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    // Format the complete address
-    const formattedAddress = formatAddress(editForm.address);
-    
-    const updatedData = {
-      ...editForm,
-      address: formattedAddress
-    };
-
-    console.log("Updated profile data:", updatedData);
-    
-    // Call parent update method
-    if (onUpdateProfile) {
-      onUpdateProfile(updatedData);
-    }
-    
-    // Call success callback
-    if (onSuccess) {
-      onSuccess('Profile updated successfully!');
-    }
-  };
-
-  // Handle overlay click to close modal
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  const getCustomerTypeDisplay = (customerTypeId) => {
-    switch (customerTypeId) {
-      case 1: return 'Pet Owner';
-      case 2: return 'Pet Sitter';
-      case 3: return 'Both';
-      default: return 'Pet Owner';
-    }
-  };
+  const openLogin = () => setAuthModal({ isOpen: true, mode: 'login', customerType: '' });
+  const openSignup = (customerType = '') => setAuthModal({ isOpen: true, mode: 'signup', customerType });
+  const closeModal = () => setAuthModal({ isOpen: false, mode: 'login', customerType: '' });
+  const switchMode = () => setAuthModal(prev => ({ 
+    isOpen: true, 
+    mode: prev.mode === 'login' ? 'signup' : 'login',
+    customerType: prev.customerType
+  }));
 
   return (
-    <div className="auth-modal-overlay" onClick={handleOverlayClick}>
-      <div className="auth-modal">
-        <div className="auth-modal-header">
-          <h2>Edit Profile</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Header 
+        onLogin={openLogin} 
+        onSignup={() => openSignup()} 
+        onLogout={onLogout}
+        currentUser={currentUser}
+      />
+      
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={closeModal}
+        mode={authModal.mode}
+        onSwitchMode={switchMode}
+        onAuthSuccess={onAuthSuccess}  
+        apiService={apiService}
+        defaultCustomerType={authModal.customerType}  
+      />
 
-        <div className="auth-modal-body">
-          <form onSubmit={handleSubmit}>
-            <div className="input-row">
-              <div>
-                <input 
-                  type="text" 
-                  name="firstName"
-                  placeholder="First Name"
-                  value={editForm.firstName}
-                  onChange={handleChange}
-                  className={errors.firstName ? 'error' : ''}
-                />
-                {errors.firstName && <div className="error-text">{errors.firstName}</div>}
-              </div>
-              <div>
-                <input 
-                  type="text" 
-                  name="lastName"
-                  placeholder="Last Name"
-                  value={editForm.lastName}
-                  onChange={handleChange}
-                  className={errors.lastName ? 'error' : ''}
-                />
-                {errors.lastName && <div className="error-text">{errors.lastName}</div>}
-              </div>
-            </div>
-
-            <div>
-              <input 
-                type="text" 
-                name="userName"
-                placeholder="Username"
-                value={editForm.userName}
-                onChange={handleChange}
-                className={errors.userName ? 'error' : ''}
-              />
-              {errors.userName && <div className="error-text">{errors.userName}</div>}
-            </div>
-
-            <div>
-              <input 
-                type="email" 
-                name="email"
-                placeholder="Email"
-                value={editForm.email}
-                onChange={handleChange}
-                className={errors.email ? 'error' : ''}
-              />
-              {errors.email && <div className="error-text">{errors.email}</div>}
-            </div>
-
-            <div>
-              <input 
-                type="tel" 
-                name="phoneNumber"
-                placeholder="Phone Number"
-                value={editForm.phoneNumber}
-                onChange={handleChange}
-                className={errors.phoneNumber ? 'error' : ''}
-              />
-              {errors.phoneNumber && <div className="error-text">{errors.phoneNumber}</div>}
-            </div>
-
-            <select 
-              name="customerTypeId" 
-              value={editForm.customerTypeId} 
-              onChange={handleChange}
-            >
-              <option value={1}>Pet Owner</option>
-              <option value={2}>Pet Sitter</option>
-              <option value={3}>Both</option>
-            </select>
-
-            {/* Address Section */}
-            <div style={{ marginTop: '16px', marginBottom: '8px' }}>
-              <strong>Address Details:</strong>
-            </div>
-            
-            <input 
-              type="text" 
-              name="address.name"
-              placeholder="Name/Building (optional)"
-              value={editForm.address.name}
-              onChange={handleChange}
-            />
-
-            <input 
-              type="text" 
-              name="address.street"
-              placeholder="Street Address"
-              value={editForm.address.street}
-              onChange={handleChange}
-            />
-
-            <div className="input-row">
-              <input 
-                type="text" 
-                name="address.city"
-                placeholder="City"
-                value={editForm.address.city}
-                onChange={handleChange}
-              />
-              <input 
-                type="text" 
-                name="address.province"
-                placeholder="Province"
-                value={editForm.address.province}
-                onChange={handleChange}
-              />
-            </div>
-
-            <input 
-              type="text" 
-              name="address.postalCode"
-              placeholder="Postal Code"
-              value={editForm.address.postalCode}
-              onChange={handleChange}
-            />
-
-            {/* Address Preview */}
-            {(editForm.address.street || editForm.address.city) && (
-              <div className="address-preview">
-                <strong>Address Preview:</strong>
-                <div className="preview-text">
-                  {formatAddress(editForm.address) || 'No address specified'}
-                </div>
-              </div>
-            )}
-
-            <button 
-              type="submit" 
-              className="submit-btn"
-              disabled={Object.keys(errors).length > 0}
-            >
-              Update Profile
-            </button>
-          </form>
-        </div>
-
-        <div className="auth-modal-footer">
-          <p>
-            Current account type: <strong>{getCustomerTypeDisplay(editForm.customerTypeId)}</strong>
-          </p>
-        </div>
-      </div>
+      <Hero 
+        onFindSitter={() => openSignup("OWNER")} 
+        onBecomeSitter={() => openSignup("SITTER")} 
+      />
+      <Features/>
+      <HowItWorks/>
+      <PetTypes/>
+      <Footer currentUser={currentUser} />
     </div>
   );
 };
 
-export default EditProfile;
+export default Homepage;

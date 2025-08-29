@@ -105,8 +105,16 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
     const formattedAddress = formatAddress(editForm.address);
     
     const updatedData = {
-      ...editForm,
-      address: formattedAddress
+      userName: editForm.userName,
+      email: editForm.email,
+      password: null, // Don't update password through profile edit
+      roleId: user.roleId || 1, // Keep existing role
+      customerTypeId: editForm.customerTypeId,
+      firstName: editForm.firstName,
+      lastName: editForm.lastName,
+      phoneNumber: editForm.phoneNumber,
+      address: formattedAddress,
+      isActive: user.isActive !== undefined ? user.isActive : true // Keep existing status
     };
 
     console.log("Updated profile data:", updatedData);
