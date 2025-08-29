@@ -231,14 +231,15 @@ const Dashboard = ({ user, onLogout }) => {
           {/* Render active tab component */}
           {activeTab === 'overview' && <Overview {...componentProps} />}
           {activeTab === 'pets' && <MyPets {...componentProps} />}
-          {activeTab === 'bookings' && <Bookings {...componentProps} />}
+          {activeTab === 'bookings' && <Bookings {...componentProps} />} 
           {activeTab === 'profile' && (
-          <Profile 
-            user={currentUser} 
-            getCustomerTypeDisplay={getCustomerTypeDisplay} 
-            onEditProfile={handleEditProfile} 
-          />
-        )}
+            <Profile 
+              user={currentUser} 
+              getCustomerTypeDisplay={getCustomerTypeDisplay} 
+              onEditProfile={handleEditProfile}
+              onLogout={onLogout} 
+            />
+          )}
         </div>
       </div>
 

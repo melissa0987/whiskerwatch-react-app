@@ -2,21 +2,29 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Trash2 } from 'lucide-react';
 import '../../css/dashboard/Profile.css';
 
-const Profile = ({ user, getCustomerTypeDisplay, onEditProfile }) => { 
+const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => { 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
 
+  const [deleteForm, setDeleteForm] = useState({
+    password: '',
+    confirmText: ''
+  });
+
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [deleteMessage, setDeleteMessage] = useState({ type: '', text: '' });
 
   // visibility states for each password field
   const [showPassword, setShowPassword] = useState({
     current: false,
     new: false,
-    confirm: false
+    confirm: false,
+    delete: false
   });
 
   const toggleVisibility = (field) => {
@@ -42,9 +50,54 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile }) => {
     }
   };
 
+  const handleDeleteAccount = async (deleteData) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/users/${user.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deleteData),
+      });
+
+      // Check if response is ok first
+      if (!response.ok) {
+        // Try to parse error message if response has content
+        let errorMessage = 'Failed to delete account';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If JSON parsing fails, use default error message
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Handle successful response - check if there's content to parse
+      const contentType = response.headers.get('content-type');
+      let data = {};
+      
+      if (contentType && contentType.includes('application/json')) {
+        // Only try to parse JSON if the response indicates JSON content
+        const text = await response.text();
+        if (text) {
+          data = JSON.parse(text);
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      throw error;
+    }
+  };
+
   const handlePasswordChangeInput = (e) => {
     const { name, value } = e.target;
     setPasswordForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleDeleteFormInput = (e) => {
+    const { name, value } = e.target;
+    setDeleteForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handlePasswordSubmit = async (e) => {
@@ -76,13 +129,55 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile }) => {
     }
   }; 
 
-  const handleDeleteAccount = () => {
-    const confirmText = 'DELETE';
-    const userInput = window.prompt(`This action cannot be undone. Type "${confirmText}" to confirm account deletion:`);
-    if (userInput === confirmText) {
-      console.log('Account deletion requested for user:', user.id);
-      setMessage({ type: 'error', text: 'Account deletion request submitted. This action cannot be undone.' });
+  const handleDeleteSubmit = async (e) => {
+    e.preventDefault();
+
+    // Clear previous messages
+    setDeleteMessage({ type: '', text: '' });
+
+    // Validation
+    if (!deleteForm.password) {
+      setDeleteMessage({ type: 'error', text: 'Password is required to delete your account.' });
+      return;
     }
+
+    if (deleteForm.confirmText !== 'DELETE') {
+      setDeleteMessage({ type: 'error', text: 'Please type "DELETE" exactly to confirm account deletion.' });
+      return;
+    }
+
+    try {
+      await handleDeleteAccount({
+        password: deleteForm.password
+      });
+      
+      // If successful, show success message and logout
+      setDeleteMessage({ type: 'success', text: 'Account deleted successfully. Logging out...' });
+      
+      // Clear form
+      setDeleteForm({ password: '', confirmText: '' });
+      
+      // Logout user after a brief delay to show the success message
+      setTimeout(() => {
+        if (onLogout) {
+          onLogout();
+        }
+      }, 1500);
+      
+    } catch (error) {
+      setDeleteMessage({ type: 'error', text: error.message || 'Failed to delete account. Please check your password and try again.' });
+    }
+  };
+
+  const handleDeleteAccountClick = () => {
+    setShowDeleteForm(true);
+    setDeleteMessage({ type: '', text: '' });
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteForm(false);
+    setDeleteForm({ password: '', confirmText: '' });
+    setDeleteMessage({ type: '', text: '' });
   };
 
   return (
@@ -211,14 +306,84 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile }) => {
             These actions will affect your account and data. Please proceed with caution.
           </p>
           <div className="account-management-actions"> 
-            <button className="btn btn-danger" onClick={handleDeleteAccount}>
+            <button className="btn btn-danger" onClick={handleDeleteAccountClick}>
               <Trash2 size={16} /> Delete Account
             </button>
           </div>
         </div>
-        <div className="form-message info" style={{ marginTop: '16px' }}>
-          <strong>Account Deletion:</strong> Permanently removes all your data. This action cannot be undone.
-        </div>
+
+        {deleteMessage.text && (
+          <div className={`form-message ${deleteMessage.type}`} style={{ marginTop: '16px' }}>
+            {deleteMessage.text}
+          </div>
+        )}
+
+        {showDeleteForm && (
+          <div className="security-form" style={{ backgroundColor: '#fff5f5', borderColor: '#fed7d7' }}>
+            <h4 style={{ color: '#e53e3e', marginBottom: '16px' }}>Confirm Account Deletion</h4>
+            <p style={{ color: '#744d4d', marginBottom: '20px' }}>
+              This action cannot be undone. All your data including pets, bookings, and profile information will be permanently deleted.
+            </p>
+            
+            <form onSubmit={handleDeleteSubmit}>
+              {/* Password Confirmation */}
+              <div className="profile-field password-field">
+                <label className="profile-label">Enter your password to confirm</label>
+                <div className="password-input-container">
+                  <input
+                    type={showPassword.delete ? 'text' : 'password'}
+                    name="password"
+                    value={deleteForm.password}
+                    onChange={handleDeleteFormInput}
+                    className="profile-input"
+                    required
+                    placeholder="Enter your current password"
+                  />
+                  <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('delete')}>
+                    {showPassword.delete ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirmation Text */}
+              <div className="profile-field">
+                <label className="profile-label">Type "DELETE" to confirm</label>
+                <input
+                  type="text"
+                  name="confirmText"
+                  value={deleteForm.confirmText}
+                  onChange={handleDeleteFormInput}
+                  className="profile-input"
+                  required
+                  placeholder="Type DELETE to confirm"
+                />
+              </div>
+
+              <div className="security-actions">
+                <button 
+                  type="submit" 
+                  className="btn btn-danger"
+                  disabled={deleteForm.confirmText !== 'DELETE' || !deleteForm.password}
+                >
+                  <Trash2 size={16} /> Permanently Delete Account
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={handleCancelDelete}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {!showDeleteForm && (
+          <div className="form-message info" style={{ marginTop: '16px' }}>
+            <strong>Account Deletion:</strong> Permanently removes all your data. This action cannot be undone.
+          </div>
+        )}
       </div>
     </div>
   );
