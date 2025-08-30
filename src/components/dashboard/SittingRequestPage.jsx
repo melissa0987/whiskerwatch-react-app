@@ -4,7 +4,7 @@ import { Calendar, Clock, PawPrint, MapPin, DollarSign, MessageSquare, Send } fr
 import apiService from "../../services/apiService"; 
 import '../../css/dashboard/SittingRequestPage.css';
 
-const SittingRequestPage = ({ user, pets = [] }) => {
+const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
   const [formData, setFormData] = useState({
     selectedPets: [],
     startDate: '',
@@ -76,7 +76,7 @@ const SittingRequestPage = ({ user, pets = [] }) => {
       newErrors.endDate = 'End date is required';
     }
 
-    if (formData.startDate && formData.endDate && formData.startDate > formData.endDate) {
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) > new Date(formData.endDate)) {
       newErrors.dateRange = 'End date must be after start date';
     }
 
@@ -92,6 +92,21 @@ const SittingRequestPage = ({ user, pets = [] }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const resetForm = () => {
+    setFormData({
+      selectedPets: [],
+      startDate: '',
+      endDate: '',
+      startTime: '09:00',
+      endTime: '17:00',
+      location: user?.address || '',
+      budgetRange: '',
+      specialRequests: '',
+      urgency: 'normal'
+    });
+  };
+
+  // Enhanced SittingRequestPage.jsx - handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -103,38 +118,64 @@ const SittingRequestPage = ({ user, pets = [] }) => {
     setSubmitMessage('');
 
     try {
-      // Shape data to match your BookingRequest DTO
-      const bookingData = {
-        bookingDate: formData.startDate,            // YYYY-MM-DD
-        startTime: `${formData.startTime}:00`,      // add seconds for HH:mm:ss
-        endTime: `${formData.endTime}:00`,
-        statusId: 1,                                // pending by default
-        totalCost: null,                            // backend can calculate later
-        specialRequests: formData.specialRequests,
-        petId: formData.selectedPets[0],            // backend supports one pet per booking
-        ownerId: user?.id,                          // use prop instead of currentUser
-        sitterId: null                              // placeholder until sitter is chosen
-      };
+      // Generate a unique group ID for related bookings
+      const groupId = Date.now().toString();
+      
+      // Create separate bookings for each pet but with a shared group identifier
+      const bookingPromises = formData.selectedPets.map(async (petId) => {
+        const bookingData = {
+          bookingDate: formData.startDate,
+          startTime: `${formData.startTime}:00`,
+          endTime: `${formData.endTime}:00`,
+          statusId: 1, // pending by default
+          totalCost: null,
+          specialRequests: formData.specialRequests,
+          petId: petId,
+          ownerId: user?.id,
+          sitterId: null,
+          // Add group identifier and pet names for better tracking
+          bookingGroupId: groupId, // This would need to be added to your backend model
+          notes: `Group booking with ${formData.selectedPets.length} pets: ${availablePets
+            .filter(pet => formData.selectedPets.includes(pet.petId || pet.id))
+            .map(pet => pet.name)
+            .join(', ')}`
+        };
 
-      const result = await apiService.createBooking(bookingData);
+        return apiService.createBooking(bookingData);
+      });
 
-      if (result.success) {
-        setSubmitMessage('Sitting request posted successfully! Sitters will be able to see your request and contact you.');
-
-        // Reset form
-        setFormData({
-          selectedPets: [],
-          startDate: '',
-          endDate: '',
-          startTime: '09:00',
-          endTime: '17:00',
-          location: user?.address || '',
-          budgetRange: '',
-          specialRequests: '',
-          urgency: 'normal'
-        });
+      // Wait for all bookings to complete
+      const results = await Promise.all(bookingPromises);
+      
+      // Check if all bookings were successful
+      const allSuccessful = results.every(result => result.success);
+      const successCount = results.filter(result => result.success).length;
+      
+      if (allSuccessful) {
+        const petCount = formData.selectedPets.length;
+        const petNames = availablePets
+          .filter(pet => formData.selectedPets.includes(pet.petId || pet.id))
+          .map(pet => pet.name)
+          .join(', ');
+          
+        setSubmitMessage(`Sitting request posted successfully for ${petCount} pet${petCount > 1 ? 's' : ''} (${petNames})! ${petCount > 1 ? `Created ${petCount} linked bookings.` : ''}`);
+        resetForm();
+        
+        // Refresh the bookings list to show the new request(s)
+        if (onRefreshBookings) {
+          console.log('Refreshing bookings after successful request submission');
+          await onRefreshBookings();
+        }
+      } else if (successCount > 0) {
+        const failedCount = results.filter(result => !result.success).length;
+        setSubmitMessage(`Partially successful: ${successCount} booking${successCount > 1 ? 's' : ''} created, ${failedCount} failed. Please check your bookings and retry failed pets if needed.`);
+        
+        // Still refresh to show successful bookings
+        if (onRefreshBookings) {
+          await onRefreshBookings();
+        }
       } else {
-        setSubmitMessage(result.message || 'Failed to post sitting request.');
+        setSubmitMessage('Failed to create any bookings. Please try again.');
       }
     } catch (error) {
       console.error("Sitting request submission error:", error);
@@ -143,9 +184,6 @@ const SittingRequestPage = ({ user, pets = [] }) => {
       setIsSubmitting(false);
     }
   };
-
-
-
 
   const calculateDays = () => {
     if (formData.startDate && formData.endDate) {

@@ -182,6 +182,8 @@ const Dashboard = ({ user, onLogout }) => {
     { id: 'request', label: 'Request Sitting', icon: PawPrint }
   );
   }
+
+
   const refreshPets = async () => {
     if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
       try {
@@ -194,6 +196,31 @@ const Dashboard = ({ user, onLogout }) => {
       }
     }
   };
+
+  const refreshBookings = async () => {
+  if (!currentUser) return;
+
+  try {
+    let newBookings = [];
+
+    // Owner bookings
+    if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+      const ownerBookingsData = await apiService.getBookingsByOwner(currentUser.id);
+      if (ownerBookingsData.success) newBookings = [...newBookings, ...ownerBookingsData.data];
+    }
+
+    // Sitter bookings
+    if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
+      const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
+      if (sitterBookingsData.success) newBookings = [...newBookings, ...sitterBookingsData.data];
+    }
+
+    setBookings(newBookings);
+  } catch (err) {
+    console.error('Error refreshing bookings:', err);
+  }
+};
+
 
   // Component props object to avoid repetition
   const componentProps = {
@@ -208,7 +235,8 @@ const Dashboard = ({ user, onLogout }) => {
     formatTime,
     onUpdateProfile: handleUpdateProfile,
     onEditProfile: handleEditProfile,
-    onRefreshPets: refreshPets
+    onRefreshPets: refreshPets, 
+    onRefreshBookings: refreshBookings
   };
 
   
@@ -248,7 +276,7 @@ const Dashboard = ({ user, onLogout }) => {
           {/* Render active tab component */}
           {activeTab === 'overview' && <Overview {...componentProps} />}
           {activeTab === 'pets' && <MyPets {...componentProps} />}
-          {activeTab === 'bookings' && <Bookings {...componentProps} />} 
+          {activeTab === 'bookings' && <Bookings {...componentProps} pets={pets} />}
           {activeTab === 'request' && <SittingRequestPage {...componentProps} />}
           {activeTab === 'profile' && (
             <Profile 
