@@ -413,3 +413,66 @@ button.submit-btn:disabled {
     width: 100%;
   }
 }
+
+/* Recent Bookings */
+.recent-bookings {
+  margin-top: 32px;
+}
+
+.recent-bookings h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #1f2937;
+}
+
+.recent-bookings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Booking Card */
+.booking-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.booking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: #d1d5db;
+}
+
+/* Booking Card Header */
+.booking-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.booking-card-header .booking-date {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Booking Details */
+.booking-details {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.booking-info-row {
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.booking-info-row strong {
+  color: #111827;
+}

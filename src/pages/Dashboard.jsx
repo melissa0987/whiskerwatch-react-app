@@ -175,6 +175,11 @@ const Dashboard = ({ user, onLogout }) => {
     console.log('Modal should be open, showEditModal:', true);
   };
 
+  const getPetName = (petId) => {
+    const pet = pets.find(p => p.id === petId);
+    return pet ? pet.name : "Unknown Pet";
+  };
+
   if (loading) {
     return (
       <div className="dashboard-loading">
@@ -305,9 +310,18 @@ const Dashboard = ({ user, onLogout }) => {
           )}
 
           {/* Render active tab component */}
-          {activeTab === 'overview' && <Overview {...componentProps} />}
+          {activeTab === 'overview' && <Overview
+            user={user}
+            pets={pets}
+            bookings={bookings}
+            getCustomerTypeDisplay={getCustomerTypeDisplay}
+            getBookingStatusDisplay={getBookingStatusDisplay}
+            formatDate={formatDate}
+            formatTime={formatTime}
+            getPetName={getPetName}
+          />}
           
-          {/* Owner-specific tabs */}
+ 
           {activeTab === 'pets' && <MyPets {...componentProps} />}
           {activeTab === 'bookings' && (
             <Bookings 
