@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { PawPrint, User, Settings, Calendar } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-
 import apiService from '../services/apiService';
 import Header from '../components/homepage/Header';
 import Overview from '../components/dashboard/Overview';
@@ -22,6 +21,7 @@ const Dashboard = ({ user, onLogout }) => {
   const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
+  const [editingBooking, setEditingBooking] = useState(null);
 
   const fetchUserData = async () => {
     setLoading(true);
@@ -88,6 +88,18 @@ const Dashboard = ({ user, onLogout }) => {
       fetchUserData();
     }
   }, [currentUser]);
+
+  // Set up the global edit booking function for the Bookings component
+  useEffect(() => {
+    window.editBooking = (booking) => {
+      setEditingBooking(booking);
+      setActiveTab('request');
+    };
+
+    return () => {
+      delete window.editBooking;
+    };
+  }, []);
 
   // Utility functions
   const getCustomerTypeDisplay = (customerTypeId) => {
@@ -157,7 +169,6 @@ const Dashboard = ({ user, onLogout }) => {
     console.log('handleEditProfile called - opening modal');
     setShowEditModal(true);
     console.log('Modal should be open, showEditModal:', true);
-
   };
 
   if (loading) {
@@ -177,12 +188,11 @@ const Dashboard = ({ user, onLogout }) => {
   // Add pets and bookings tabs only if user is a pet owner
   if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
     navigationItems.push(
-    { id: 'pets', label: 'My Pets', icon: PawPrint },
-    { id: 'bookings', label: 'Bookings', icon: Calendar },
-    { id: 'request', label: 'Request Sitting', icon: PawPrint }
-  );
+      { id: 'pets', label: 'My Pets', icon: PawPrint },
+      { id: 'bookings', label: 'Bookings', icon: Calendar },
+      { id: 'request', label: 'Request Sitting', icon: PawPrint }
+    );
   }
-
 
   const refreshPets = async () => {
     if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
@@ -198,29 +208,28 @@ const Dashboard = ({ user, onLogout }) => {
   };
 
   const refreshBookings = async () => {
-  if (!currentUser) return;
+    if (!currentUser) return;
 
-  try {
-    let newBookings = [];
+    try {
+      let newBookings = [];
 
-    // Owner bookings
-    if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
-      const ownerBookingsData = await apiService.getBookingsByOwner(currentUser.id);
-      if (ownerBookingsData.success) newBookings = [...newBookings, ...ownerBookingsData.data];
+      // Owner bookings
+      if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+        const ownerBookingsData = await apiService.getBookingsByOwner(currentUser.id);
+        if (ownerBookingsData.success) newBookings = [...newBookings, ...ownerBookingsData.data];
+      }
+
+      // Sitter bookings
+      if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
+        const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
+        if (sitterBookingsData.success) newBookings = [...newBookings, ...sitterBookingsData.data];
+      }
+
+      setBookings(newBookings);
+    } catch (err) {
+      console.error('Error refreshing bookings:', err);
     }
-
-    // Sitter bookings
-    if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
-      const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
-      if (sitterBookingsData.success) newBookings = [...newBookings, ...sitterBookingsData.data];
-    }
-
-    setBookings(newBookings);
-  } catch (err) {
-    console.error('Error refreshing bookings:', err);
-  }
-};
-
+  };
 
   // Component props object to avoid repetition
   const componentProps = {
@@ -239,8 +248,6 @@ const Dashboard = ({ user, onLogout }) => {
     onRefreshBookings: refreshBookings
   };
 
-  
-
   console.log('Dashboard render - showEditModal:', showEditModal);
 
   return (
@@ -255,11 +262,23 @@ const Dashboard = ({ user, onLogout }) => {
             {navigationItems.map(({ id, label, icon}) => (
               <button
                 key={id}
-                onClick={() => setActiveTab(id)}
+                onClick={() => {
+                  setActiveTab(id);
+                  // Clear editing booking when switching tabs (except to request tab)
+                  if (id !== 'request') {
+                    setEditingBooking(null);
+                  }
+                }}
                 className={`nav-tab ${activeTab === id ? 'active' : ''}`}
               >
                 {React.createElement(icon, { size: 20 })}
                 {label}
+                {/* Show indicator if editing a booking on request tab */}
+                {id === 'request' && editingBooking && (
+                  <span className="ml-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                    Editing
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -276,8 +295,23 @@ const Dashboard = ({ user, onLogout }) => {
           {/* Render active tab component */}
           {activeTab === 'overview' && <Overview {...componentProps} />}
           {activeTab === 'pets' && <MyPets {...componentProps} />}
-          {activeTab === 'bookings' && <Bookings {...componentProps} pets={pets} />}
-          {activeTab === 'request' && <SittingRequestPage {...componentProps} />}
+          {activeTab === 'bookings' && (
+            <Bookings 
+              {...componentProps} 
+              pets={pets} 
+              onEditBooking={(booking) => {
+                setEditingBooking(booking);  // store which booking is being edited
+                setActiveTab('request');     // switch to the "Request Sitting" tab
+              }}
+            />
+          )}
+          {activeTab === 'request' && (
+            <SittingRequestPage 
+              {...componentProps} 
+              editingBooking={editingBooking}
+              onEditComplete={() => setEditingBooking(null)}
+            />
+          )}
           {activeTab === 'profile' && (
             <Profile 
               user={currentUser} 

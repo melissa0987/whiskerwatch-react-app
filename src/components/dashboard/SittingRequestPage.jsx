@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Calendar, Clock, PawPrint, MapPin, DollarSign, MessageSquare, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, PawPrint, MapPin, DollarSign, MessageSquare, Send, X, Edit } from 'lucide-react';
 
 import apiService from "../../services/apiService"; 
 import '../../css/dashboard/SittingRequestPage.css';
 
-const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
+const SittingRequestPage = ({ user, pets = [], onRefreshBookings, editingBooking, onEditComplete }) => {
   const [formData, setFormData] = useState({
     selectedPets: [],
     startDate: '',
@@ -20,6 +20,7 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Mock pets data if none provided
   const mockPets = [
@@ -37,6 +38,27 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
     { value: '75+', label: '$75+ per day' },
     { value: 'negotiable', label: 'Negotiable' }
   ];
+
+  // Effect to populate form when editing booking
+  useEffect(() => {
+    if (editingBooking) {
+      setIsEditMode(true);
+      setFormData({
+        selectedPets: editingBooking.pets || [editingBooking.petId],
+        startDate: editingBooking.bookingDate,
+        endDate: editingBooking.bookingDate, // For now, single day bookings
+        startTime: editingBooking.startTime ? editingBooking.startTime.substring(0, 5) : '09:00',
+        endTime: editingBooking.endTime ? editingBooking.endTime.substring(0, 5) : '17:00',
+        location: editingBooking.location || user?.address || '',
+        budgetRange: editingBooking.budgetRange || '',
+        specialRequests: editingBooking.specialRequests || '',
+        urgency: editingBooking.urgency || 'normal'
+      });
+      setSubmitMessage('');
+    } else {
+      setIsEditMode(false);
+    }
+  }, [editingBooking, user?.address]);
 
   const handlePetSelection = (petId) => {
     setFormData(prev => ({
@@ -59,6 +81,14 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
       ...prev,
       selectedPets: []
     }));
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    resetForm();
+    if (onEditComplete) {
+      onEditComplete();
+    }
   };
 
   const validateForm = () => {
@@ -104,82 +134,125 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
       specialRequests: '',
       urgency: 'normal'
     });
+    setErrors({});
+    setSubmitMessage('');
   };
 
-  // Enhanced SittingRequestPage.jsx - handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     setSubmitMessage('');
 
     try {
-      // Generate a unique group ID for related bookings
-      const groupId = Date.now().toString();
-      
-      // Create separate bookings for each pet but with a shared group identifier
-      const bookingPromises = formData.selectedPets.map(async (petId) => {
-        const bookingData = {
-          bookingDate: formData.startDate,
-          startTime: `${formData.startTime}:00`,
-          endTime: `${formData.endTime}:00`,
-          statusId: 1, // pending by default
-          totalCost: null,
-          specialRequests: formData.specialRequests,
-          petId: petId,
-          ownerId: user?.id,
-          sitterId: null,
-          // Add group identifier and pet names for better tracking
-          bookingGroupId: groupId, // This would need to be added to your backend model
-          notes: `Group booking with ${formData.selectedPets.length} pets: ${availablePets
-            .filter(pet => formData.selectedPets.includes(pet.petId || pet.id))
-            .map(pet => pet.name)
-            .join(', ')}`
-        };
+      if (isEditMode && editingBooking) {
+        // Editing an existing booking
+        const isMultiPetBooking = editingBooking.pets && editingBooking.pets.length > 1;
+        
+        if (isMultiPetBooking && editingBooking.bookingIds) {
+          // Update all bookings in the group
+          const updatePromises = editingBooking.bookingIds.map(bookingId => {
+            console.log('Updating booking ID:', bookingId);
+            const updatedData = {
+              bookingDate: formData.startDate,
+              startTime: `${formData.startTime}:00`,
+              endTime: `${formData.endTime}:00`,
+              location: formData.location,
+              budgetRange: formData.budgetRange,
+              specialRequests: formData.specialRequests,
+              urgency: formData.urgency
+            };
+            return apiService.updateBooking(bookingId, updatedData);
+          });
 
-        return apiService.createBooking(bookingData);
-      });
+          const results = await Promise.all(updatePromises);
+          const successCount = results.filter(r => r.success).length;
+          const totalCount = results.length;
 
-      // Wait for all bookings to complete
-      const results = await Promise.all(bookingPromises);
-      
-      // Check if all bookings were successful
-      const allSuccessful = results.every(result => result.success);
-      const successCount = results.filter(result => result.success).length;
-      
-      if (allSuccessful) {
-        const petCount = formData.selectedPets.length;
-        const petNames = availablePets
-          .filter(pet => formData.selectedPets.includes(pet.petId || pet.id))
-          .map(pet => pet.name)
-          .join(', ');
+          if (successCount === totalCount) {
+            setSubmitMessage(`Successfully updated all ${totalCount} bookings in the group!`);
+          } else {
+            setSubmitMessage(`Partially successful: ${successCount}/${totalCount} bookings updated.`);
+          }
+        } else {
+          // Update single booking - ensure we have a valid booking ID
+          const bookingId = editingBooking.id || editingBooking.bookingIds?.[0];
           
-        setSubmitMessage(`Sitting request posted successfully for ${petCount} pet${petCount > 1 ? 's' : ''} (${petNames})! ${petCount > 1 ? `Created ${petCount} linked bookings.` : ''}`);
-        resetForm();
-        
-        // Refresh the bookings list to show the new request(s)
-        if (onRefreshBookings) {
-          console.log('Refreshing bookings after successful request submission');
-          await onRefreshBookings();
+          if (!bookingId) {
+            setSubmitMessage('Error: No valid booking ID found for update');
+            return;
+          }
+
+          console.log('Updating single booking ID:', bookingId);
+          const updatedData = {
+            bookingDate: formData.startDate,
+            startTime: `${formData.startTime}:00`,
+            endTime: `${formData.endTime}:00`,
+            location: formData.location,
+            budgetRange: formData.budgetRange,
+            specialRequests: formData.specialRequests,
+            urgency: formData.urgency
+          };
+
+          const result = await apiService.updateBooking(bookingId, updatedData);
+
+          if (result.success) {
+            setSubmitMessage('Booking updated successfully!');
+          } else {
+            setSubmitMessage(result.message || 'Failed to update booking');
+          }
         }
-      } else if (successCount > 0) {
-        const failedCount = results.filter(result => !result.success).length;
-        setSubmitMessage(`Partially successful: ${successCount} booking${successCount > 1 ? 's' : ''} created, ${failedCount} failed. Please check your bookings and retry failed pets if needed.`);
-        
-        // Still refresh to show successful bookings
-        if (onRefreshBookings) {
-          await onRefreshBookings();
-        }
+
+        // Refresh bookings and exit edit mode
+        if (onRefreshBookings) await onRefreshBookings();
+        setTimeout(() => {
+          setIsEditMode(false);
+          if (onEditComplete) onEditComplete();
+        }, 2000);
+
       } else {
-        setSubmitMessage('Failed to create any bookings. Please try again.');
+        // Create new booking(s)
+        const groupId = Date.now().toString();
+        const bookingPromises = formData.selectedPets.map(petId => {
+          const bookingData = {
+            bookingDate: formData.startDate,
+            startTime: `${formData.startTime}:00`,
+            endTime: `${formData.endTime}:00`,
+            statusId: 1,
+            totalCost: null,
+            specialRequests: formData.specialRequests,
+            petId,
+            ownerId: user?.id,
+            sitterId: null,
+            bookingGroupId: groupId,
+            notes: `Group booking with ${formData.selectedPets.length} pets: ${availablePets
+              .filter(p => formData.selectedPets.includes(p.petId || p.id))
+              .map(p => p.name).join(', ')}`,
+          };
+          return apiService.createBooking(bookingData);
+        });
+
+        const results = await Promise.all(bookingPromises);
+        const allSuccessful = results.every(r => r.success);
+        const successCount = results.filter(r => r.success).length;
+
+        if (allSuccessful) {
+          setSubmitMessage(`Sitting request posted successfully for ${formData.selectedPets.length} pet(s)!`);
+          resetForm();
+          if (onRefreshBookings) await onRefreshBookings();
+        } else if (successCount > 0) {
+          const failedCount = results.filter(r => !r.success).length;
+          setSubmitMessage(`Partially successful: ${successCount} created, ${failedCount} failed.`);
+          if (onRefreshBookings) await onRefreshBookings();
+        } else {
+          setSubmitMessage('Failed to create any bookings.');
+        }
       }
     } catch (error) {
-      console.error("Sitting request submission error:", error);
-      setSubmitMessage('Failed to post sitting request. Please try again.');
+      console.error("Booking submission error:", error);
+      setSubmitMessage('Failed to submit booking. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -198,8 +271,37 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Post a Sitting Request</h1>
-        <p className="text-gray-600">Find trusted sitters for your beloved pets</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {isEditMode ? (
+                <span className="flex items-center gap-2">
+                  <Edit size={32} />
+                  Edit Booking
+                </span>
+              ) : (
+                'Post a Sitting Request'
+              )}
+            </h1>
+            <p className="text-gray-600">
+              {isEditMode 
+                ? `Editing booking ${editingBooking?.id || 'group'} - make your changes below`
+                : 'Find trusted sitters for your beloved pets'
+              }
+            </p>
+          </div>
+          
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <X size={20} />
+              Cancel Edit
+            </button>
+          )}
+        </div>
       </div>
 
       {submitMessage && (
@@ -218,6 +320,11 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
             <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
               <PawPrint className="text-blue-600" size={24} />
               Select Pets
+              {isEditMode && (
+                <span className="text-sm font-normal text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                  Editing Mode
+                </span>
+              )}
             </h2>
             <div className="space-x-2">
               <button
@@ -437,7 +544,17 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end pt-6 border-t border-gray-200">
+        <div className="flex justify-end pt-6 border-t border-gray-200 gap-3">
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-6 py-3 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel Changes
+            </button>
+          )}
+          
           <button
             type="submit"
             disabled={isSubmitting}
@@ -446,12 +563,12 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings }) => {
             {isSubmitting ? (
               <>
                 <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                Posting Request...
+                {isEditMode ? 'Updating...' : 'Posting Request...'}
               </>
             ) : (
               <>
                 <Send size={20} />
-                Post Sitting Request
+                {isEditMode ? 'Update Booking' : 'Post Sitting Request'}
               </>
             )}
           </button>
