@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PawPrint, User, Settings, Calendar } from 'lucide-react';
+import { PawPrint, User, Settings, Calendar, Search, Briefcase } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import apiService from '../services/apiService';
@@ -11,6 +11,10 @@ import Profile from '../components/dashboard/Profile';
 import EditProfile from '../components/dashboard/EditProfile';
 import Footer from '../components/homepage/Footer';
 import SittingRequestPage from '../components/dashboard/SittingRequestPage'; 
+import SittingJobs from '../components/dashboard/SittingJobs';
+// Add this import for the Browse Requests component
+import SittingRequests from '../components/dashboard/SittingRequestPage'; 
+
 import '../css/Dashboard.css'; 
 
 const Dashboard = ({ user, onLogout }) => {
@@ -179,18 +183,26 @@ const Dashboard = ({ user, onLogout }) => {
     );
   }
 
-  // Define navigation items
+  // Define navigation items based on user type
   const navigationItems = [
     { id: 'overview', label: 'Overview', icon: User },
     { id: 'profile', label: 'Profile', icon: Settings }
   ];
 
-  // Add pets and bookings tabs only if user is a pet owner
+  // Add owner-specific tabs
   if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
     navigationItems.push(
       { id: 'pets', label: 'My Pets', icon: PawPrint },
-      { id: 'bookings', label: 'Bookings', icon: Calendar },
+      { id: 'bookings', label: 'My Bookings', icon: Calendar },
       { id: 'request', label: 'Request Sitting', icon: PawPrint }
+    );
+  }
+
+  // Add sitter-specific tabs
+  if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
+    navigationItems.push(
+      { id: 'sitting-requests', label: 'Browse Requests', icon: Search },
+      { id: 'sitting-jobs', label: 'My Jobs', icon: Briefcase }
     );
   }
 
@@ -294,14 +306,16 @@ const Dashboard = ({ user, onLogout }) => {
 
           {/* Render active tab component */}
           {activeTab === 'overview' && <Overview {...componentProps} />}
+          
+          {/* Owner-specific tabs */}
           {activeTab === 'pets' && <MyPets {...componentProps} />}
           {activeTab === 'bookings' && (
             <Bookings 
               {...componentProps} 
               pets={pets} 
               onEditBooking={(booking) => {
-                setEditingBooking(booking);  // store which booking is being edited
-                setActiveTab('request');     // switch to the "Request Sitting" tab
+                setEditingBooking(booking);
+                setActiveTab('request');
               }}
             />
           )}
@@ -312,6 +326,20 @@ const Dashboard = ({ user, onLogout }) => {
               onEditComplete={() => setEditingBooking(null)}
             />
           )}
+          
+          {/* Sitter-specific tabs */}
+          {activeTab === 'sitting-requests' && (
+            <SittingRequests 
+              {...componentProps}
+            />
+          )}
+          {activeTab === 'sitting-jobs' && (
+            <SittingJobs 
+              {...componentProps}
+            />
+          )}
+          
+          {/* Profile tab */}
           {activeTab === 'profile' && (
             <Profile 
               user={currentUser} 

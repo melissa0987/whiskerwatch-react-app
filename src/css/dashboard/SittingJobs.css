@@ -1,0 +1,375 @@
+/* Sitting Jobs Styles */
+.sitting-jobs-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  background-color: #f3f4f6;
+  padding: 4px;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.filter-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #6b7280;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.filter-tab:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.filter-tab.active {
+  background-color: white;
+  color: #3b82f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-count {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.filter-tab.active .tab-count {
+  background-color: #dbeafe;
+  color: #3b82f6;
+}
+
+/* Jobs Grid */
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.job-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.job-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Status-based card styling */
+.job-card.confirmed {
+  border-left: 4px solid #10b981;
+}
+
+.job-card.in-progress {
+  border-left: 4px solid #f59e0b;
+  background-color: #fffbeb;
+}
+
+.job-card.completed {
+  border-left: 4px solid #6b7280;
+  opacity: 0.85;
+}
+
+/* Job Header */
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.job-status-badge {
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-indicator.confirmed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-indicator.in-progress {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-indicator.completed {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.job-pet-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f0f9ff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0369a1;
+}
+
+/* Job Owner Info */
+.job-owner-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.job-owner-info > div {
+  flex: 1;
+}
+
+.owner-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.contact-info svg {
+  color: #9ca3af;
+}
+
+/* Job Details */
+.job-details {
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.detail-row svg {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.location {
+  font-weight: 500;
+}
+
+.cost {
+  font-weight: 600;
+  color: #059669;
+  font-size: 1rem;
+}
+
+/* Special Requests */
+.special-requests {
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.special-requests > div {
+  display: flex;
+  gap: 8px;
+}
+
+.special-requests svg {
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.special-requests strong {
+  color: #92400e;
+  font-size: 0.875rem;
+}
+
+.special-requests p {
+  margin: 4px 0 0 0;
+  font-size: 0.875rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+/* Job Actions */
+.job-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.action-btn.start {
+  background-color: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+}
+
+.action-btn.start:hover:not(:disabled) {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.action-btn.complete {
+  background-color: #10b981;
+  color: white;
+  border: 1px solid #10b981;
+}
+
+.action-btn.complete:hover:not(:disabled) {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.status-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.status-badge.completed {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* Multi-pet Indicator */
+.multi-pet-indicator {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+/* Loading States */
+.loading-state, .error-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sitting-jobs-container {
+    padding: 16px;
+  }
+  
+  .filter-tabs {
+    gap: 2px;
+    padding: 2px;
+  }
+  
+  .filter-tab {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .jobs-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .job-card {
+    padding: 16px;
+  }
+  
+  .job-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .job-owner-info {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .contact-info {
+    font-size: 0.8rem;
+  }
+  
+  .job-actions {
+    justify-content: stretch;
+  }
+  
+  .action-btn {
+    flex: 1;
+    min-width: unset;
+  }
+}
