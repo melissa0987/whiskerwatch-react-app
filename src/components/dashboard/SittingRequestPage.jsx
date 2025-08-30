@@ -159,10 +159,12 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings, editingBooking
               bookingDate: formData.startDate,
               startTime: `${formData.startTime}:00`,
               endTime: `${formData.endTime}:00`,
-              location: formData.location,
-              budgetRange: formData.budgetRange,
+              statusId: editingBooking.statusId || 1,
+              totalCost: editingBooking.totalCost,
               specialRequests: formData.specialRequests,
-              urgency: formData.urgency
+              petId: editingBooking.petId,
+              ownerId: editingBooking.ownerId || user?.id,
+              sitterId: editingBooking.sitterId || 1 
             };
             return apiService.updateBooking(bookingId, updatedData);
           });
@@ -190,10 +192,12 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings, editingBooking
             bookingDate: formData.startDate,
             startTime: `${formData.startTime}:00`,
             endTime: `${formData.endTime}:00`,
-            location: formData.location,
-            budgetRange: formData.budgetRange,
+            statusId: editingBooking.statusId || 1,
+            totalCost: editingBooking.totalCost,
             specialRequests: formData.specialRequests,
-            urgency: formData.urgency
+            petId: editingBooking.petId,
+            ownerId: editingBooking.ownerId || user?.id,
+            sitterId: editingBooking.sitterId || 1
           };
 
           const result = await apiService.updateBooking(bookingId, updatedData);
@@ -216,6 +220,12 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings, editingBooking
         // Create new booking(s)
         const groupId = Date.now().toString();
         const bookingPromises = formData.selectedPets.map(petId => {
+          // Ensure petId is valid
+          const validPetId = typeof petId === 'number' ? petId : parseInt(petId);
+          if (isNaN(validPetId)) {
+            console.error('Invalid pet ID:', petId);
+            return Promise.reject(new Error('Invalid pet ID'));
+          }
           const bookingData = {
             bookingDate: formData.startDate,
             startTime: `${formData.startTime}:00`,
@@ -223,7 +233,7 @@ const SittingRequestPage = ({ user, pets = [], onRefreshBookings, editingBooking
             statusId: 1,
             totalCost: null,
             specialRequests: formData.specialRequests,
-            petId,
+            petId: validPetId,
             ownerId: user?.id,
             sitterId: null,
             bookingGroupId: groupId,

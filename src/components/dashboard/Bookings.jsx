@@ -12,7 +12,6 @@ const Bookings = ({
   onRefreshBookings,
   onEditBooking
 }) => {
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,6 +61,19 @@ const Bookings = ({
   };
 
   const handleDeleteClick = (booking, isGroup = false) => {
+    // Add validation to ensure we have valid IDs
+    if (isGroup) {
+      if (!booking.bookingIds || booking.bookingIds.length === 0) {
+        console.error('Cannot delete group booking: no booking IDs found');
+        return;
+      }
+    } else {
+      if (!booking.id) {
+        console.error('Cannot delete booking: no booking ID found');
+        return;
+      }
+    }
+    
     setDeleteTarget({ booking, isGroup });
     setDeleteMessage('');
     setShowDeleteModal(true);
@@ -77,21 +89,35 @@ const Bookings = ({
       const { booking, isGroup } = deleteTarget;
 
       if (isGroup) {
+        // Handle grouped bookings
+        if (!booking.bookingIds || booking.bookingIds.length === 0) {
+          setDeleteMessage('Error: No booking IDs found for group deletion.');
+          return;
+        }
+        
         const deletePromises = booking.bookingIds.map(id => apiService.deleteBooking(id));
         const results = await Promise.all(deletePromises);
         const successCount = results.filter(r => r.success).length;
         const totalCount = results.length;
 
-        if (successCount === totalCount) {
-          setDeleteMessage(`Successfully deleted all ${totalCount} bookings for ${formatPetNames(booking.pets)}.`);
-        } else {
-          setDeleteMessage(`Partially successful: ${successCount}/${totalCount} bookings deleted for ${formatPetNames(booking.pets)}.`);
-        }
+        setDeleteMessage(
+          successCount === totalCount
+            ? `Successfully deleted all ${totalCount} bookings for ${formatPetNames(booking.pets)}.`
+            : `Partially successful: ${successCount}/${totalCount} bookings deleted for ${formatPetNames(booking.pets)}.`
+        );
       } else {
-        const result = await apiService.deleteBooking(booking.id);
-        setDeleteMessage(result.success
-          ? `Successfully deleted booking for ${getPetName(booking.petId)}.`
-          : result.message || 'Failed to delete booking.'
+        // Handle individual bookings - try different ID properties
+        const bookingId = booking.id || booking.bookingId || booking.bookingNumber;
+        if (!bookingId) {
+          setDeleteMessage('Error: No valid booking ID found.');
+          return;
+        }
+        
+        const result = await apiService.deleteBooking(bookingId);
+        setDeleteMessage(
+          result.success
+            ? `Successfully deleted booking for ${getPetName(booking.petId)}.`
+            : result.message || 'Failed to delete booking.'
         );
       }
 
@@ -109,12 +135,26 @@ const Bookings = ({
   const groupBookings = (bookings) => {
     const groups = {};
     bookings.forEach(booking => {
+      // Try different possible ID property names
+      const bookingId = booking.id || booking.bookingId || booking.bookingNumber;
+      
+      if (!bookingId) {
+        console.error('No valid booking ID found in booking object:', booking);
+        return; // Skip this booking
+      }
+      
       const key = `${booking.bookingDate}_${booking.startTime}_${booking.endTime}_${booking.specialRequests || 'none'}`;
       if (!groups[key]) {
-        groups[key] = { ...booking, pets: [booking.petId], bookingIds: [booking.bookingId] };
+        groups[key] = { 
+          ...booking, 
+          pets: [booking.petId], 
+          bookingIds: [bookingId],
+          id: bookingId  
+        };
       } else {
         groups[key].pets.push(booking.petId);
-        groups[key].bookingIds.push(booking.bookingId);
+        groups[key].bookingIds.push(bookingId); 
+        delete groups[key].id;
       }
     });
     return Object.values(groups);
