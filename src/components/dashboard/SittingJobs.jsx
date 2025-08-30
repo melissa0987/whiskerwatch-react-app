@@ -7,7 +7,8 @@ const SittingJobs = ({
   user, 
   onRefreshBookings,
   formatDate, 
-  formatTime 
+  formatTime,
+  getPetTypeDisplay 
 }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,6 +16,8 @@ const SittingJobs = ({
   const [actionMessage, setActionMessage] = useState('');
   const [processingJob, setProcessingJob] = useState(null);
   const [filter, setFilter] = useState('all'); // all, upcoming, in-progress, completed
+  const [petDetails, setPetDetails] = useState({});
+  const [ownerDetails, setOwnerDetails] = useState({});
 
   // Status mapping for better display
   const statusClassMap = {
@@ -26,6 +29,69 @@ const SittingJobs = ({
 
   const getStatusClass = (statusName) => {
     return statusClassMap[statusName.toUpperCase()] || 'unknown-status';
+  };
+
+  // Fetch pet details
+  const fetchPetDetails = async (petIds) => {
+    const newPetDetails = { ...petDetails };
+    const missingPetIds = petIds.filter(id => !newPetDetails[id]);
+    if (missingPetIds.length === 0) return;
+
+    try {
+      await Promise.all(missingPetIds.map(async (petId) => {
+        try {
+          const response = await fetch(`http://localhost:8080/api/pets/${petId}`);
+          if (response.ok) {
+            newPetDetails[petId] = await response.json();
+          } else {
+            newPetDetails[petId] = { id: petId, name: `Pet ${petId}`, typeId: 1, breed: 'Unknown', age: 'Unknown' };
+          }
+        } catch {
+          newPetDetails[petId] = { id: petId, name: `Pet ${petId}`, typeId: 1, breed: 'Unknown', age: 'Unknown' };
+        }
+      }));
+      setPetDetails(newPetDetails);
+    } catch (err) {
+      console.error('Error fetching pet details:', err);
+    }
+  };
+
+  // Fetch owner details
+  const fetchOwnerDetails = async (ownerIds) => {
+    const newOwnerDetails = { ...ownerDetails };
+    const missingOwnerIds = ownerIds.filter(id => !newOwnerDetails[id]);
+    if (missingOwnerIds.length === 0) return;
+
+    try {
+      await Promise.all(missingOwnerIds.map(async (ownerId) => {
+        try {
+          const response = await fetch(`http://localhost:8080/api/users/${ownerId}`);
+          if (response.ok) {
+            const ownerData = await response.json();
+            newOwnerDetails[ownerId] = ownerData;
+          } else {
+            newOwnerDetails[ownerId] = { 
+              id: ownerId, 
+              firstName: 'Unknown', 
+              lastName: 'Owner',
+              email: '',
+              phoneNumber: ''
+            };
+          }
+        } catch {
+          newOwnerDetails[ownerId] = { 
+            id: ownerId, 
+            firstName: 'Unknown', 
+            lastName: 'Owner',
+            email: '',
+            phoneNumber: ''
+          };
+        }
+      }));
+      setOwnerDetails(newOwnerDetails);
+    } catch (err) {
+      console.error('Error fetching owner details:', err);
+    }
   };
 
   // Fetch accepted sitting jobs
@@ -42,6 +108,13 @@ const SittingJobs = ({
           ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'].includes(booking.statusName)
         );
         setJobs(acceptedJobs);
+        
+        // Fetch additional details for pets and owners
+        const allPetIds = [...new Set(acceptedJobs.map(job => job.petId))];
+        const allOwnerIds = [...new Set(acceptedJobs.map(job => job.ownerId))];
+        
+        if (allPetIds.length > 0) await fetchPetDetails(allPetIds);
+        if (allOwnerIds.length > 0) await fetchOwnerDetails(allOwnerIds);
       } else {
         setError('Failed to load your sitting jobs');
         setJobs([]);
@@ -67,11 +140,16 @@ const SittingJobs = ({
     jobs.forEach(job => {
       const key = `${job.bookingDate}_${job.startTime}_${job.endTime}_${job.ownerId}_${job.specialRequests || 'none'}`;
       if (!groups[key]) {
+        const owner = ownerDetails[job.ownerId];
         groups[key] = { 
           ...job, 
           pets: [job.petId], 
           bookingIds: [job.id],
-          ownerName: `${job.ownerFirstName || 'Unknown'} ${job.ownerLastName || 'Owner'}`
+          ownerName: owner 
+            ? `${owner.firstName || ''} ${owner.lastName || ''}`.trim() || 'Pet Owner'
+            : `${job.ownerFirstName || ''} ${job.ownerLastName || ''}`.trim() || 'Pet Owner',
+          ownerEmail: owner?.email || job.ownerEmail || '',
+          ownerPhoneNumber: owner?.phoneNumber || job.ownerPhoneNumber || ''
         };
       } else {
         groups[key].pets.push(job.petId);
@@ -247,12 +325,28 @@ const SittingJobs = ({
   };
 
   const formatPetInfo = (petIds) => {
-    if (!Array.isArray(petIds)) return `Pet #${petIds}`;
-    if (petIds.length === 1) return `Pet #${petIds[0]}`;
-    if (petIds.length === 2) return `Pet #${petIds[0]} & Pet #${petIds[1]}`;
-    if (petIds.length <= 4) return petIds.map(id => `Pet #${id}`).join(', ');
-    return `${petIds.slice(0,3).map(id => `Pet #${id}`).join(', ')} and ${petIds.length - 3} more`;
-    };
+    if (!Array.isArray(petIds)) {
+      const pet = petDetails[petIds];
+      return pet ? `${pet.name} (${getPetTypeDisplay ? getPetTypeDisplay(pet.typeId) : 'Pet'})` : `Pet #${petIds}`;
+    }
+    
+    if (petIds.length === 1) {
+      const pet = petDetails[petIds[0]];
+      return pet ? `${pet.name} (${getPetTypeDisplay ? getPetTypeDisplay(pet.typeId) : 'Pet'})` : `Pet #${petIds[0]}`;
+    }
+    
+    if (petIds.length <= 4) {
+      return petIds.map(id => {
+        const pet = petDetails[id];
+        return pet ? `${pet.name} (${getPetTypeDisplay ? getPetTypeDisplay(pet.typeId) : 'Pet'})` : `Pet #${id}`;
+      }).join(', ');
+    }
+    
+    return `${petIds.slice(0,3).map(id => {
+      const pet = petDetails[id];
+      return pet ? `${pet.name} (${getPetTypeDisplay ? getPetTypeDisplay(pet.typeId) : 'Pet'})` : `Pet #${id}`;
+    }).join(', ')} and ${petIds.length - 3} more`;
+  };
 
   const filteredJobs = getFilteredJobs();
 

@@ -248,6 +248,8 @@ const Dashboard = ({ user, onLogout }) => {
     }
   };
 
+
+
   // Component props object to avoid repetition
   const componentProps = {
     user: currentUser,
@@ -347,9 +349,14 @@ const Dashboard = ({ user, onLogout }) => {
               {...componentProps}
             />
           )}
+
           {activeTab === 'sitting-jobs' && (
-            <SittingJobs 
-              {...componentProps}
+            <SittingJobs
+              user={user}
+              onRefreshBookings={refreshBookings}
+              formatDate={formatDate}
+              formatTime={formatTime}
+              getPetTypeDisplay={getPetTypeDisplay}   
             />
           )}
           
