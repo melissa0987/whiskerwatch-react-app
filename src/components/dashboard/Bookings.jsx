@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, PawPrint, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { Calendar, PawPrint, Edit, Trash2, AlertCircle, Send, X } from 'lucide-react';
 import apiService from '../../services/apiService';
 import '../../css/dashboard/Bookings.css';
 
@@ -9,13 +9,18 @@ const Bookings = ({
   formatDate, 
   formatTime, 
   pets = [], 
-  onRefreshBookings,
-  onEditBooking
+  onRefreshBookings 
 }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState('');
+  
+  // Edit modal states
+  const [editingRequest, setEditingRequest] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [editErrors, setEditErrors] = useState({});
+  const [updating, setUpdating] = useState(false);
 
   // Map API statusName to CSS classes
   const statusClassMap = {
@@ -46,18 +51,79 @@ const Bookings = ({
     return `${names.slice(0, 3).join(', ')} and ${names.length - 3} more`;
   };
 
-  const canUpdateBooking = (statusName) => {
-    const readOnlyStatuses = ['COMPLETED', 'CANCELLED', 'REJECTED'];
-    return !readOnlyStatuses.includes(statusName.toUpperCase());
+  // Updated permission logic - owners can edit/delete PENDING, COMPLETED, and CANCELLED bookings
+  const canEditBooking = (statusName) => {
+    const editableStatuses = ['PENDING', 'COMPLETED', 'CANCELLED'];
+    return editableStatuses.includes(statusName.toUpperCase());
   };
 
   const canDeleteBooking = (statusName) => {
-    const deletableStatuses = ['COMPLETED', 'CANCELLED'];
+    const deletableStatuses = ['PENDING', 'COMPLETED', 'CANCELLED'];
     return deletableStatuses.includes(statusName.toUpperCase());
   };
 
+  // Edit functionality
   const handleEditBooking = (booking) => {
-    if (onEditBooking) onEditBooking(booking);
+    setEditingRequest(booking);
+    setEditFormData({
+      bookingDate: booking.bookingDate,
+      startTime: booking.startTime?.slice(0, 5) || '09:00',
+      endTime: booking.endTime?.slice(0, 5) || '17:00',
+      location: booking.location || '',
+      budgetRange: booking.budgetRange || '',
+      specialRequests: booking.specialRequests || '',
+      urgency: booking.urgency || 'normal'
+    });
+    setEditErrors({});
+  };
+
+  const validateEditForm = () => {
+    const errors = {};
+    if (!editFormData.bookingDate) errors.bookingDate = 'Date is required.';
+    if (!editFormData.location?.trim()) errors.location = 'Location is required.';
+    if (!editFormData.budgetRange) {
+      errors.budgetRange = 'Budget is required.';
+    } else if (isNaN(editFormData.budgetRange) || Number(editFormData.budgetRange) <= 0) {
+      errors.budgetRange = 'Budget must be a positive number.';
+    }
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateEditForm()) return;
+
+    setUpdating(true);
+    try {
+      const response = await apiService.updateBooking(editingRequest.id, {
+        bookingDate: editFormData.bookingDate,
+        startTime: `${editFormData.startTime}:00`,
+        endTime: `${editFormData.endTime}:00`,
+        location: editFormData.location,
+        budgetRange: editFormData.budgetRange,
+        specialRequests: editFormData.specialRequests,
+        urgency: editFormData.urgency
+      });
+
+      if (response.success) {
+        setEditingRequest(null);
+        if (onRefreshBookings) await onRefreshBookings();
+      } else {
+        alert('Failed to update the request.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating the request.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditingRequest(null);
+    setEditFormData({});
+    setEditErrors({});
   };
 
   const handleDeleteClick = (booking, isGroup = false) => {
@@ -192,7 +258,7 @@ const Bookings = ({
           {groupedBookings.map((booking, index) => {
             const isMultiPet = booking.pets.length > 1;
             const petNames = formatPetNames(booking.pets);
-            const canUpdate = canUpdateBooking(booking.statusName);
+            const canEdit = canEditBooking(booking.statusName);
             const canDelete = canDeleteBooking(booking.statusName);
 
             return (
@@ -212,8 +278,24 @@ const Bookings = ({
                     </span>
 
                     <div className="booking-detail-actions">
-                      {canUpdate && <button onClick={() => handleEditBooking(booking)} className="action-btn edit" title="Edit booking"><Edit size={16} /></button>}
-                      {canDelete && <button onClick={() => handleDeleteClick(booking, isMultiPet)} className="action-btn delete" title="Delete booking"><Trash2 size={16} /></button>}
+                      {canEdit && (
+                        <button 
+                          onClick={() => handleEditBooking(booking)} 
+                          className="action-btn edit" 
+                          title="Edit booking"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button 
+                          onClick={() => handleDeleteClick(booking, isMultiPet)} 
+                          className="action-btn delete" 
+                          title="Delete booking"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -228,9 +310,9 @@ const Bookings = ({
                 {booking.specialRequests && <div className="booking-special-requests"><strong>Special Requests:</strong> {booking.specialRequests}</div>}
 
                 <div className="mt-3 flex gap-4 text-xs">
-                  {canUpdate && <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Editable</span>}
+                  {canEdit && <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded">Editable</span>}
                   {canDelete && <span className="text-gray-500 bg-gray-100 px-2 py-1 rounded">Deletable</span>}
-                  {!canUpdate && !canDelete && <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded">Read-only</span>}
+                  {!canEdit && !canDelete && <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded">Read-only</span>}
                 </div>
 
                 {isMultiPet && <div className="mt-2 text-xs text-gray-400">Booking IDs: #{booking.bookingIds.join(', #')}</div>}
@@ -240,6 +322,7 @@ const Bookings = ({
         </div>
       )}
 
+      {/* ------------------ Delete Modal ------------------ */}
       {showDeleteModal && deleteTarget && (
         <div className="delete-modal-overlay">
           <div className="delete-modal-content">
@@ -268,6 +351,129 @@ const Bookings = ({
           </div>
         </div>
       )}
+
+
+      {/* ------------------ Edit Modal ------------------ */}
+      {editingRequest && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Edit Request for {getPetName(editingRequest.petId)}</h3>
+              <button className="close-btn" onClick={closeEditModal}>
+                <X size={20}/>
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="edit-form">
+              {/* Start & End Dates */}
+              <div className="form-section grid-2">
+                <div>
+                  <label className="form-label">Start Date</label>
+                  <input 
+                    type="date" 
+                    value={editFormData.startDate || ''} 
+                    onChange={e => setEditFormData({...editFormData, startDate: e.target.value})}
+                  />
+                  {editErrors.startDate && <p className="error">{editErrors.startDate}</p>}
+                </div>
+                <div>
+                  <label className="form-label">End Date</label>
+                  <input 
+                    type="date" 
+                    value={editFormData.endDate || ''} 
+                    onChange={e => setEditFormData({...editFormData, endDate: e.target.value})}
+                  />
+                  {editErrors.endDate && <p className="error">{editErrors.endDate}</p>}
+                  {editErrors.dateRange && <p className="error">{editErrors.dateRange}</p>}
+                </div>
+              </div>
+
+              {/* Time Range */}
+              <div className="form-section grid-2">
+                <div>
+                  <label className="form-label">Start Time</label>
+                  <input 
+                    type="time" 
+                    value={editFormData.startTime} 
+                    onChange={e => setEditFormData({...editFormData, startTime: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">End Time</label>
+                  <input 
+                    type="time" 
+                    value={editFormData.endTime} 
+                    onChange={e => setEditFormData({...editFormData, endTime: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              {/* Location & Budget */}
+              <div className="form-section grid-2">
+                <div>
+                  <label className="form-label">Location</label>
+                  <textarea 
+                    value={editFormData.location} 
+                    onChange={e => setEditFormData({...editFormData, location: e.target.value})} 
+                    rows={2}
+                  />
+                  {editErrors.location && <p className="error">{editErrors.location}</p>}
+                </div>
+                <div>
+                  <label className="form-label">Budget Range</label>
+                  <input 
+                    type="number"
+                    min="0"
+                    value={editFormData.budgetRange} 
+                    onChange={e => setEditFormData({...editFormData, budgetRange: e.target.value})} 
+                    placeholder="Enter your budget"
+                  />
+                  {editErrors.budgetRange && <p className="error">{editErrors.budgetRange}</p>}
+                </div>
+              </div>
+
+              {/* Special Requests */}
+              <div className="form-section">
+                <label className="form-label">Special Requests</label>
+                <textarea 
+                  value={editFormData.specialRequests} 
+                  onChange={e => setEditFormData({...editFormData, specialRequests: e.target.value})} 
+                  rows={3} 
+                  placeholder="Any special instructions or notes for the sitter..."
+                />
+              </div>
+
+              {/* Urgency */}
+              <div className="form-section">
+                <label className="form-label">Urgency Level</label>
+                <div className="urgency-options">
+                  {['low','normal','high','urgent'].map(level => (
+                    <label key={level}>
+                      <input 
+                        type="radio" 
+                        value={level} 
+                        checked={editFormData.urgency === level} 
+                        onChange={e => setEditFormData({...editFormData, urgency: e.target.value})}
+                      />
+                      {level.charAt(0).toUpperCase() + level.slice(1)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button type="button" className="cancel-btn" onClick={closeEditModal}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={updating} className="submit-btn">
+                  <Send size={16}/> {updating ? 'Updating...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

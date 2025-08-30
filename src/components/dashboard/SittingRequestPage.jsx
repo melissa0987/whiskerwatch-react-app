@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import OwnerView from './OwnerView';
 import SitterView from './SitterView';
+import '../../css/dashboard/SittingRequestPage.css';
 
 const SittingRequestPage = ({ user, ...props }) => {
   const [viewMode, setViewMode] = useState(

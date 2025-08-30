@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, PawPrint, MapPin, DollarSign, MessageSquare, Check, X, AlertCircle, User, Phone, Mail } from 'lucide-react';
 import apiService from '../../services/apiService';
-import '../../css/dashboard/SittingRequestPage.css';
+import '../../css/dashboard/SitterView.css';
+
 
 const SitterView = ({ 
   user, 
@@ -17,7 +18,7 @@ const SitterView = ({
   const [processingRequest, setProcessingRequest] = useState(null);
   const [petDetails, setPetDetails] = useState({});
 
-  // 🔹 Fetch pet details
+  // ðŸ”¹ Fetch pet details
     const fetchPetDetails = async (petIds) => {
     const newPetDetails = { ...petDetails };
     const missingPetIds = petIds.filter(id => !newPetDetails[id]);
@@ -43,7 +44,7 @@ const SitterView = ({
     };
 
 
-  // 🔹 Fetch available sitting requests (only pending w/o sitter)
+  // ðŸ”¹ Fetch available sitting requests (only pending w/o sitter)
   const fetchSittingRequests = async () => {
     setLoading(true);
     setError('');
@@ -74,7 +75,7 @@ const SitterView = ({
     }
   }, [user]);
 
-  // 🔹 Accept & Reject Handlers
+  // ðŸ”¹ Accept & Reject Handlers
   const handleAcceptRequest = async (request) => {
     setProcessingRequest(request.id);
     setActionMessage('');
@@ -113,7 +114,7 @@ const SitterView = ({
     }
   };
 
-  // 🔹 Helper: Format
+  // ðŸ”¹ Helper: Format
   const formatOwnerName = (firstName, lastName) => {
     return (firstName || '') + ' ' + (lastName || '') || 'Pet Owner';
   };
