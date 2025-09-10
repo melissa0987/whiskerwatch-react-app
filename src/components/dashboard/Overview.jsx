@@ -15,7 +15,7 @@ const Overview = ({
       
       {/* Stats Cards */}
       <div className="stats-grid">
-        {(user.customerTypeId === 1 || user.customerTypeId === 3) && (
+        {(user.customerTypeId === 1 ) && (
           <div className="stats-card pets">
             <h3>My Pets</h3>
             <p>{pets.length}</p>
@@ -41,8 +41,7 @@ const Overview = ({
         <h3>Welcome to Whisker Watch!</h3>
         <p>
           {user.customerTypeId === 1 && "As a pet owner, you can manage your pets and book trusted sitters for them."}
-          {user.customerTypeId === 2 && "As a pet sitter, you can view and manage your booking requests from pet owners."}
-          {user.customerTypeId === 3 && "You have both owner and sitter privileges - manage your pets and provide sitting services to other owners."}
+          {user.customerTypeId === 2 && "As a pet sitter, you can view and manage your booking requests from pet owners."} 
         </p>
       </div>
 

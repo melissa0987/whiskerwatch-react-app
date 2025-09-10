@@ -38,7 +38,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
   const [editForm, setEditForm] = useState({
     firstName: user.firstName || '',
     lastName: user.lastName || '',
-    userName: user.userName || '',
+    username: user.username || '',
     email: user.email || '',
     phoneNumber: user.phoneNumber || '',
     customerTypeId: user.customerTypeId || 1,
@@ -74,7 +74,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
     
     if (!editForm.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!editForm.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!editForm.userName.trim()) newErrors.userName = 'Username is required';
+    if (!editForm.username.trim()) newErrors.username = 'username is required';
     if (!editForm.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(editForm.email)) {
@@ -107,7 +107,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
     const formattedAddress = formatAddress(editForm.address);
     
     const updatedData = {
-      userName: editForm.userName,
+      username: editForm.username,
       email: editForm.email,
       password: null, // Don't update password through profile edit
       roleId: user.roleId || 1, // Keep existing role
@@ -142,8 +142,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
   const getCustomerTypeDisplay = (customerTypeId) => {
     switch (customerTypeId) {
       case 1: return 'Pet Owner';
-      case 2: return 'Pet Sitter';
-      case 3: return 'Both';
+      case 2: return 'Pet Sitter'; 
       default: return 'Pet Owner';
     }
   };
@@ -187,13 +186,13 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
               <div className="form-field">
                 <input 
                   type="text" 
-                  name="userName"
-                  placeholder="Username"
-                  value={editForm.userName}
+                  name="username"
+                  placeholder="username"
+                  value={editForm.username}
                   onChange={handleChange}
-                  className={errors.userName ? 'error' : ''}
+                  className={errors.username ? 'error' : ''}
                 />
-                {errors.userName && <div className="error-text">{errors.userName}</div>}
+                {errors.username && <div className="error-text">{errors.username}</div>}
               </div>
 
               <div className="form-field">
@@ -227,8 +226,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
                   onChange={handleChange}
                 >
                   <option value={1}>Pet Owner</option>
-                  <option value={2}>Pet Sitter</option>
-                  <option value={3}>Both</option>
+                  <option value={2}>Pet Sitter</option> 
                 </select>
               </div>
 

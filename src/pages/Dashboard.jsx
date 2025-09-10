@@ -35,7 +35,7 @@ const Dashboard = ({ user, onLogout }) => {
       console.log('Fetching data for user:', currentUser);
       
       // Only attempt to fetch data if user is an owner (customerTypeId 1 or 3)
-      if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+      if (currentUser.customerTypeId === 1) {
         try {
           console.log('Fetching pets for owner ID:', currentUser.id);
           const petsData = await apiService.getPetsByOwner(currentUser.id);
@@ -58,19 +58,12 @@ const Dashboard = ({ user, onLogout }) => {
       }
 
       // If user is also a sitter (customerTypeId 2 or 3), fetch sitter bookings
-      if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
+      if (currentUser.customerTypeId === 2 ) {
         try {
           console.log('Fetching sitter bookings for user ID:', currentUser.id);
           const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
           console.log('Sitter bookings data:', sitterBookingsData);
-          if (sitterBookingsData.success) {
-            // Combine with existing bookings if user is both owner and sitter
-            if (currentUser.customerTypeId === 3) {
-              setBookings(prev => [...prev, ...sitterBookingsData.data]);
-            } else {
-              setBookings(sitterBookingsData.data);
-            }
-          }
+          
         } catch (corsError) {
           console.warn('CORS error fetching sitter bookings - using mock data for now', corsError);
         }
@@ -195,7 +188,7 @@ const Dashboard = ({ user, onLogout }) => {
   ];
 
   // Add owner-specific tabs
-  if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+  if (currentUser.customerTypeId === 1) {
     navigationItems.push(
       { id: 'pets', label: 'My Pets', icon: PawPrint },
       { id: 'bookings', label: 'My Bookings', icon: Calendar },
@@ -204,7 +197,7 @@ const Dashboard = ({ user, onLogout }) => {
   }
 
   // Add sitter-specific tabs
-  if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
+  if (currentUser.customerTypeId === 2 ) {
     navigationItems.push(
       { id: 'sitting-requests', label: 'Browse Requests', icon: Search },
       { id: 'sitting-jobs', label: 'My Jobs', icon: Briefcase }
@@ -212,7 +205,7 @@ const Dashboard = ({ user, onLogout }) => {
   }
 
   const refreshPets = async () => {
-    if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+    if (currentUser.customerTypeId === 1 ) {
       try {
         console.log('Refreshing pets for user:', currentUser.id);
         const petsData = await apiService.getPetsByOwner(currentUser.id);
@@ -231,13 +224,13 @@ const Dashboard = ({ user, onLogout }) => {
       let newBookings = [];
 
       // Owner bookings
-      if (currentUser.customerTypeId === 1 || currentUser.customerTypeId === 3) {
+      if (currentUser.customerTypeId === 1 ) {
         const ownerBookingsData = await apiService.getBookingsByOwner(currentUser.id);
         if (ownerBookingsData.success) newBookings = [...newBookings, ...ownerBookingsData.data];
       }
 
       // Sitter bookings
-      if (currentUser.customerTypeId === 2 || currentUser.customerTypeId === 3) {
+      if (currentUser.customerTypeId === 2 ) {
         const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
         if (sitterBookingsData.success) newBookings = [...newBookings, ...sitterBookingsData.data];
       }

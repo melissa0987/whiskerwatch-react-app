@@ -189,7 +189,7 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
         <div className="profile-form">
           <div className="profile-field"><label>First Name</label><input type="text" value={user.firstName || ''} readOnly className="profile-input" /></div>
           <div className="profile-field"><label>Last Name</label><input type="text" value={user.lastName || ''} readOnly className="profile-input" /></div>
-          <div className="profile-field"><label>Username</label><input type="text" value={user.userName || ''} readOnly className="profile-input" /></div>
+          <div className="profile-field"><label>Username</label><input type="text" value={user.username || ''} readOnly className="profile-input" /></div>
           <div className="profile-field"><label>Email</label><input type="email" value={user.email || ''} readOnly className="profile-input" /></div>
           <div className="profile-field"><label>Phone Number</label><input type="tel" value={user.phoneNumber || ''} readOnly className="profile-input" /></div>
           <div className="profile-field"><label>Account Type</label><input type="text" value={getCustomerTypeDisplay(user.customerTypeId)} readOnly className="profile-input" /></div>

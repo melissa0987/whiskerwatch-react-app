@@ -4,7 +4,7 @@ import '../css/AuthModal.css'; // Custom CSS
 
 const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiService, defaultCustomerType }) => {
   const [formData, setFormData] = useState({
-    userName: '',
+    username: '',
     email: '',
     password: '',
     firstName: '',
@@ -59,7 +59,8 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
           ...formData,
           customerTypeId:
             formData.customerType === 'OWNER' ? 1 :
-            formData.customerType === 'SITTER' ? 2 : 3
+            formData.customerType === 'SITTER' ? 2 :
+            null
         };
         console.log('Signup data:', signupData);
         
@@ -97,7 +98,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
 
   const isFormValid = () => {
     if (mode === 'login') return formData.email && formData.password;
-    return formData.userName && formData.email && formData.password &&
+    return formData.username && formData.email && formData.password &&
            formData.firstName && formData.lastName && formData.phoneNumber && formData.address;
   };
 
@@ -130,9 +131,9 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
               </div>
               <input 
                 type="text" 
-                name="userName" 
-                placeholder="Username" 
-                value={formData.userName} 
+                name="username" 
+                placeholder="username" 
+                value={formData.username} 
                 onChange={handleInputChange} 
               />
             </>
@@ -182,8 +183,7 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
               />
               <select name="customerType" value={formData.customerType} onChange={handleInputChange}>
                 <option value="OWNER">Pet Owner</option>
-                <option value="SITTER">Pet Sitter</option>
-                <option value="BOTH">Both</option>
+                <option value="SITTER">Pet Sitter</option> 
               </select>
             </>
           )}

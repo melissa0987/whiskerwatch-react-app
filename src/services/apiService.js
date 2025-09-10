@@ -7,7 +7,7 @@ const apiService = {
   signup: async (userData) => {
     try {
       const response = await axios.post(`${API_URL}/users`, {
-        userName: userData.userName,
+        username: userData.username,
         email: userData.email,
         password: userData.password,
         roleId: 1, // CUSTOMER role
@@ -35,7 +35,7 @@ const apiService = {
                   id: createdUser.userId,
                   firstName: createdUser.firstName,
                   lastName: createdUser.lastName,
-                  userName: createdUser.userName,
+                  username: createdUser.username,
                   email: createdUser.email,
                   phoneNumber: createdUser.phoneNumber,
                   address: createdUser.address,
@@ -55,7 +55,7 @@ const apiService = {
           user: {
             firstName: userData.firstName,
             lastName: userData.lastName,
-            userName: userData.userName,
+            username: userData.username,
             email: userData.email,
             phoneNumber: userData.phoneNumber,
             address: userData.address,
@@ -99,7 +99,7 @@ const apiService = {
             id: user.userId,
             firstName: user.firstName,
             lastName: user.lastName,
-            userName: user.userName,
+            username: user.username,
             email: user.email,
             phoneNumber: user.phoneNumber,
             address: user.address,
