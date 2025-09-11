@@ -269,6 +269,8 @@ class ApiService {
     }
   }
 
+  
+
   // Protected API endpoints
   async getPetsByOwner(ownerId) {
     return this.apiCall(`/pets/owner/${ownerId}`);
@@ -283,6 +285,7 @@ class ApiService {
   }
 
   async updateUserProfile(userId, profileData) {
+    console.log('Updating user profile:', { userId, profileData });
     return this.apiCall(`/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(profileData),
@@ -290,6 +293,7 @@ class ApiService {
   }
 
   async changePassword(userId, passwordData) {
+    console.log('Changing password for user:', userId);
     return this.apiCall(`/users/${userId}/password`, {
       method: 'PUT',
       body: JSON.stringify(passwordData),
@@ -297,6 +301,7 @@ class ApiService {
   }
 
   async deleteAccount(userId, deleteData) {
+    console.log('Deleting account for user:', userId);
     return this.apiCall(`/users/${userId}`, {
       method: 'DELETE',
       body: JSON.stringify(deleteData),

@@ -27,18 +27,25 @@ const Dashboard = () => {
   const [showEditModal, setShowEditModal] = useState(false);
 
   const fetchUserData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('fetchUserData: No user found, skipping fetch');
+      return;
+    }
+    
+    console.log('fetchUserData: Starting fetch for user:', user);
+    console.log('fetchUserData: User ID:', user.id);
+    console.log('fetchUserData: Customer Type:', user.customerTypeId);
     
     setLoading(true);
     setError('');
     
     try {
-      console.log('Fetching data for user:', user);
-      
       // Fetch pets for owners
       if (user.customerTypeId === 1) {
         try {
+          console.log('fetchUserData: Fetching pets for owner ID:', user.id);
           const petsResponse = await apiService.getPetsByOwner(user.id);
+          console.log('fetchUserData: Pets response:', petsResponse);
           if (petsResponse.success) {
             setPets(petsResponse.data || []);
           } else {
@@ -50,7 +57,9 @@ const Dashboard = () => {
         }
 
         try {
+          console.log('fetchUserData: Fetching owner bookings for user ID:', user.id);
           const ownerBookingsResponse = await apiService.getBookingsByOwner(user.id);
+          console.log('fetchUserData: Owner bookings response:', ownerBookingsResponse);
           if (ownerBookingsResponse.success) {
             setBookings(ownerBookingsResponse.data || []);
           } else {
@@ -65,7 +74,9 @@ const Dashboard = () => {
       // Fetch bookings for sitters
       if (user.customerTypeId === 2) {
         try {
+          console.log('fetchUserData: Fetching sitter bookings for user ID:', user.id);
           const sitterBookingsResponse = await apiService.getBookingsBySitter(user.id);
+          console.log('fetchUserData: Sitter bookings response:', sitterBookingsResponse);
           if (sitterBookingsResponse.success) {
             setBookings(sitterBookingsResponse.data || []);
           } else {
@@ -110,7 +121,6 @@ const Dashboard = () => {
   const handleProfileUpdate = async (updatedUser) => {
     updateUser(updatedUser);
     setShowEditModal(false);
-    await refreshData(); // Refresh after profile update
   };
 
   if (!user) {

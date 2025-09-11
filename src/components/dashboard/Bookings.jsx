@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, PawPrint, Edit, Trash2, AlertCircle, Send, X } from 'lucide-react';
+import { Calendar, PawPrint, Edit, Trash2, AlertCircle, Send, X, Plus } from 'lucide-react';
 import apiService from '../../services/apiService';
+import OwnerView from './OwnerView';
 import '../../css/dashboard/Bookings.css';
 
 const Bookings = ({ 
@@ -9,7 +10,8 @@ const Bookings = ({
   formatDate, 
   formatTime, 
   pets = [], 
-  refreshData 
+  refreshData,
+  user
 }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -21,6 +23,9 @@ const Bookings = ({
   const [editFormData, setEditFormData] = useState({});
   const [editErrors, setEditErrors] = useState({});
   const [updating, setUpdating] = useState(false);
+
+  // Create request modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Default format functions if not provided
   const safeFormatDate = formatDate || ((date) => {
@@ -91,6 +96,21 @@ const Bookings = ({
     return deletableStatuses.includes(statusName.toUpperCase());
   };
 
+  // Create new request functionality
+  const handleCreateRequest = () => {
+    setShowCreateModal(true);
+  };
+
+  const handleCreateSuccess = async () => {
+    setShowCreateModal(false);
+    setDeleteMessage('New sitting request created successfully!');
+    if (refreshData) await refreshData();
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+  };
+
   // Edit functionality
   const handleEditBooking = (booking) => {
     if (!booking) return;
@@ -100,10 +120,8 @@ const Bookings = ({
       bookingDate: booking.bookingDate || '',
       startTime: booking.startTime?.slice(0, 5) || '09:00',
       endTime: booking.endTime?.slice(0, 5) || '17:00',
-      location: booking.location || '',
-      budgetRange: booking.budgetRange || '',
       specialRequests: booking.specialRequests || '',
-      urgency: booking.urgency || 'normal'
+      totalCost: booking.totalCost || ''
     });
     setEditErrors({});
   };
@@ -111,12 +129,14 @@ const Bookings = ({
   const validateEditForm = () => {
     const errors = {};
     if (!editFormData.bookingDate) errors.bookingDate = 'Date is required.';
-    if (!editFormData.location?.trim()) errors.location = 'Location is required.';
-    if (!editFormData.budgetRange) {
-      errors.budgetRange = 'Budget is required.';
-    } else if (isNaN(editFormData.budgetRange) || Number(editFormData.budgetRange) <= 0) {
-      errors.budgetRange = 'Budget must be a positive number.';
+    if (!editFormData.startTime) errors.startTime = 'Start time is required.';
+    if (!editFormData.endTime) errors.endTime = 'End time is required.';
+    
+    // Check if end time is after start time
+    if (editFormData.startTime && editFormData.endTime && editFormData.startTime >= editFormData.endTime) {
+      errors.timeRange = 'End time must be after start time.';
     }
+
     setEditErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -127,25 +147,33 @@ const Bookings = ({
 
     setUpdating(true);
     try {
-      const response = await apiService.updateBooking(editingRequest.id, {
+      // Prepare update data - only include fields that should be updated by owners
+      const updateData = {
         bookingDate: editFormData.bookingDate,
         startTime: `${editFormData.startTime}:00`,
         endTime: `${editFormData.endTime}:00`,
-        location: editFormData.location,
-        budgetRange: editFormData.budgetRange,
-        specialRequests: editFormData.specialRequests,
-        urgency: editFormData.urgency
-      });
+        statusId: editingRequest.statusId || 1,
+        totalCost: editFormData.totalCost ? parseFloat(editFormData.totalCost) : null,
+        specialRequests: editFormData.specialRequests || null,
+        petId: editingRequest.petId,
+        ownerId: user.id, // Use current user's ID
+        sitterId: editingRequest.sitterId || null // Preserve existing sitterId or null for pending
+      };
+
+      console.log('Updating booking with data:', updateData);
+      
+      const response = await apiService.updateBooking(editingRequest.bookingId || editingRequest.id, updateData);
 
       if (response.success) {
         setEditingRequest(null);
+        setDeleteMessage('Booking updated successfully!');
         if (refreshData) await refreshData();
       } else {
-        alert('Failed to update the request.');
+        setEditErrors({ submit: response.message || 'Failed to update the booking.' });
       }
     } catch (err) {
-      console.error(err);
-      alert('Error updating the request.');
+      console.error('Edit booking error:', err);
+      setEditErrors({ submit: 'Error updating the booking.' });
     } finally {
       setUpdating(false);
     }
@@ -279,21 +307,46 @@ const Bookings = ({
   }
 
   const groupedBookings = groupBookings(bookings);
+  const isOwner = user && user.customerTypeId === 1;
 
   return (
     <div>
       <div className="section-header">
         <h2 className="section-title">My Bookings</h2>
-        {bookings.length > 0 && (
-          <div className="text-sm text-gray-600">
-            {groupedBookings.length} booking session{groupedBookings.length !== 1 ? 's' : ''} 
-            ({bookings.length} total pet{bookings.length !== 1 ? 's' : ''})
-          </div>
-        )}
+        <div className="section-header-actions">
+          {bookings.length > 0 && (
+            <div className="text-sm text-gray-600">
+              {groupedBookings.length} booking session{groupedBookings.length !== 1 ? 's' : ''} 
+              ({bookings.length} total pet{bookings.length !== 1 ? 's' : ''})
+            </div>
+          )}
+          {isOwner && (
+            <button 
+              onClick={handleCreateRequest}
+              className="btn btn-primary"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              <Plus size={16} />
+              New Request
+            </button>
+          )}
+        </div>
       </div>
 
       {deleteMessage && (
-        <div className={`mb-4 p-4 rounded-lg ${deleteMessage.includes('success') 
+        <div className={`mb-4 p-4 rounded-lg ${deleteMessage.includes('success') || deleteMessage.includes('Successfully')
           ? 'bg-green-50 text-green-800 border border-green-200' 
           : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {deleteMessage}
@@ -304,6 +357,29 @@ const Bookings = ({
         <div className="empty-state">
           <Calendar size={48} color="#dee2e6" />
           <p>{error ? 'Unable to load bookings due to server issues.' : 'No bookings found.'}</p>
+          {isOwner && !error && (
+            <button 
+              onClick={handleCreateRequest}
+              className="btn btn-primary"
+              style={{
+                marginTop: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              <Plus size={18} />
+              Create Your First Sitting Request
+            </button>
+          )}
         </div>
       ) : (
         <div className="bookings-list">
@@ -378,6 +454,34 @@ const Bookings = ({
         </div>
       )}
 
+      {/* ------------------ Create Request Modal with OwnerView ------------------ */}
+      {showCreateModal && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal-content" style={{ 
+            maxWidth: '800px', 
+            width: '90%', 
+            maxHeight: '90vh', 
+            overflow: 'auto' 
+          }}>
+            <div className="modal-header">
+              <h3>Create New Sitting Request</h3>
+              <button className="close-btn" onClick={closeCreateModal}>
+                <X size={20}/>
+              </button>
+            </div>
+            
+            <div className="modal-body" style={{ padding: '0' }}>
+              <OwnerView 
+                user={user}
+                pets={pets}
+                onNavigateToBookings={handleCreateSuccess}
+                refreshData={refreshData}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ------------------ Delete Modal ------------------ */}
       {showDeleteModal && deleteTarget && (
         <div className="delete-modal-overlay">
@@ -420,27 +524,15 @@ const Bookings = ({
             </div>
             
             <form onSubmit={handleEditSubmit} className="edit-form">
-              {/* Start & End Dates */}
-              <div className="form-section grid-2">
-                <div>
-                  <label className="form-label">Start Date</label>
-                  <input 
-                    type="date" 
-                    value={editFormData.startDate || ''} 
-                    onChange={e => setEditFormData({...editFormData, startDate: e.target.value})}
-                  />
-                  {editErrors.startDate && <p className="error">{editErrors.startDate}</p>}
-                </div>
-                <div>
-                  <label className="form-label">End Date</label>
-                  <input 
-                    type="date" 
-                    value={editFormData.endDate || ''} 
-                    onChange={e => setEditFormData({...editFormData, endDate: e.target.value})}
-                  />
-                  {editErrors.endDate && <p className="error">{editErrors.endDate}</p>}
-                  {editErrors.dateRange && <p className="error">{editErrors.dateRange}</p>}
-                </div>
+              {/* Date */}
+              <div className="form-section">
+                <label className="form-label">Booking Date</label>
+                <input 
+                  type="date" 
+                  value={editFormData.bookingDate} 
+                  onChange={e => setEditFormData({...editFormData, bookingDate: e.target.value})}
+                />
+                {editErrors.bookingDate && <p className="error">{editErrors.bookingDate}</p>}
               </div>
 
               {/* Time Range */}
@@ -452,6 +544,7 @@ const Bookings = ({
                     value={editFormData.startTime} 
                     onChange={e => setEditFormData({...editFormData, startTime: e.target.value})}
                   />
+                  {editErrors.startTime && <p className="error">{editErrors.startTime}</p>}
                 </div>
                 <div>
                   <label className="form-label">End Time</label>
@@ -460,31 +553,22 @@ const Bookings = ({
                     value={editFormData.endTime} 
                     onChange={e => setEditFormData({...editFormData, endTime: e.target.value})}
                   />
+                  {editErrors.endTime && <p className="error">{editErrors.endTime}</p>}
                 </div>
               </div>
+              {editErrors.timeRange && <p className="error">{editErrors.timeRange}</p>}
 
-              {/* Location & Budget */}
-              <div className="form-section grid-2">
-                <div>
-                  <label className="form-label">Location</label>
-                  <textarea 
-                    value={editFormData.location} 
-                    onChange={e => setEditFormData({...editFormData, location: e.target.value})} 
-                    rows={2}
-                  />
-                  {editErrors.location && <p className="error">{editErrors.location}</p>}
-                </div>
-                <div>
-                  <label className="form-label">Budget Range</label>
-                  <input 
-                    type="number"
-                    min="0"
-                    value={editFormData.budgetRange} 
-                    onChange={e => setEditFormData({...editFormData, budgetRange: e.target.value})} 
-                    placeholder="Enter your budget"
-                  />
-                  {editErrors.budgetRange && <p className="error">{editErrors.budgetRange}</p>}
-                </div>
+              {/* Budget */}
+              <div className="form-section">
+                <label className="form-label">Budget</label>
+                <input 
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editFormData.totalCost} 
+                  onChange={e => setEditFormData({...editFormData, totalCost: e.target.value})} 
+                  placeholder="Enter your budget"
+                />
               </div>
 
               {/* Special Requests */}
@@ -498,23 +582,7 @@ const Bookings = ({
                 />
               </div>
 
-              {/* Urgency */}
-              <div className="form-section">
-                <label className="form-label">Urgency Level</label>
-                <div className="urgency-options">
-                  {['low','normal','high','urgent'].map(level => (
-                    <label key={level}>
-                      <input 
-                        type="radio" 
-                        value={level} 
-                        checked={editFormData.urgency === level} 
-                        onChange={e => setEditFormData({...editFormData, urgency: e.target.value})}
-                      />
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {editErrors.submit && <p className="error" style={{ color: '#dc3545', fontSize: '14px', marginBottom: '16px' }}>{editErrors.submit}</p>}
 
               <div className="modal-actions">
                 <button type="button" className="cancel-btn" onClick={closeEditModal}>

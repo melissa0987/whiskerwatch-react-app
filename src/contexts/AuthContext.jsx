@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import apiService from '../services/apiService';
+
 // Auth state
 const initialState = {
   user: null,
@@ -189,12 +190,23 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
   };
 
-  // Update user data
-  const updateUser = (userData) => {
-    console.log('Updating user data:', userData);
+  // Update user data - PRESERVE existing user data
+  const updateUser = (updatedUserData) => {
+    console.log('Updating user data:', updatedUserData);
+    console.log('Current user before update:', state.user);
+    
+    // Preserve the existing user ID and other important fields
+    const mergedUser = {
+      ...state.user, // Keep existing user data
+      ...updatedUserData, // Override with new data
+      id: state.user?.id || updatedUserData.id, // Always preserve the ID
+    };
+    
+    console.log('Merged user data:', mergedUser);
+    
     dispatch({
       type: AUTH_ACTIONS.SET_USER,
-      payload: { user: userData },
+      payload: { user: mergedUser },
     });
   };
 

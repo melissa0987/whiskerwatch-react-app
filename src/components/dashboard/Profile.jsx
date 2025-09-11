@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Trash2 } from 'lucide-react';
+import apiService from '../../services/apiService';
 import '../../css/dashboard/Profile.css';
 
 const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => { 
@@ -18,6 +19,7 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [deleteMessage, setDeleteMessage] = useState({ type: '', text: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   // visibility states for each password field
   const [showPassword, setShowPassword] = useState({
@@ -33,17 +35,15 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
 
   const handlePasswordChange = async (passwordData) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/users/${user.id}/password`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(passwordData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Failed to change password');
-
-      setMessage({ type: 'success', text: data.message });
+      // Use apiService which includes authentication headers
+      const response = await apiService.changePassword(user.id, passwordData);
+      
+      if (response.success) {
+        setMessage({ type: 'success', text: response.message || 'Password updated successfully!' });
+        return response;
+      } else {
+        throw new Error(response.message || 'Failed to change password');
+      }
     } catch (error) {
       console.error('Password change error:', error);
       throw error;
@@ -52,38 +52,14 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
 
   const handleDeleteAccount = async (deleteData) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/users/${user.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(deleteData),
-      });
-
-      // Check if response is ok first
-      if (!response.ok) {
-        // Try to parse error message if response has content
-        let errorMessage = 'Failed to delete account';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          // If JSON parsing fails, use default error message
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Handle successful response - check if there's content to parse
-      const contentType = response.headers.get('content-type');
-      let data = {};
+      // Use apiService which includes authentication headers
+      const response = await apiService.deleteAccount(user.id, deleteData);
       
-      if (contentType && contentType.includes('application/json')) {
-        // Only try to parse JSON if the response indicates JSON content
-        const text = await response.text();
-        if (text) {
-          data = JSON.parse(text);
-        }
+      if (response.success) {
+        return response;
+      } else {
+        throw new Error(response.message || 'Failed to delete account');
       }
-
-      return data;
     } catch (error) {
       console.error('Account deletion error:', error);
       throw error;
@@ -102,17 +78,22 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    setMessage({ type: '', text: '' });
 
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
       setMessage({ type: 'error', text: 'All password fields are required.' });
+      setIsLoading(false);
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setMessage({ type: 'error', text: 'New passwords do not match.' });
+      setIsLoading(false);
       return;
     }
     if (passwordForm.newPassword.length < 8) {
       setMessage({ type: 'error', text: 'Password must be at least 8 characters long.' });
+      setIsLoading(false);
       return;
     }
 
@@ -126,11 +107,14 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
       setShowPasswordForm(false);
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'Failed to change password' });
+    } finally {
+      setIsLoading(false);
     }
   }; 
 
   const handleDeleteSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
 
     // Clear previous messages
     setDeleteMessage({ type: '', text: '' });
@@ -138,11 +122,13 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
     // Validation
     if (!deleteForm.password) {
       setDeleteMessage({ type: 'error', text: 'Password is required to delete your account.' });
+      setIsLoading(false);
       return;
     }
 
     if (deleteForm.confirmText !== 'DELETE') {
       setDeleteMessage({ type: 'error', text: 'Please type "DELETE" exactly to confirm account deletion.' });
+      setIsLoading(false);
       return;
     }
 
@@ -166,6 +152,8 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
       
     } catch (error) {
       setDeleteMessage({ type: 'error', text: error.message || 'Failed to delete account. Please check your password and try again.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -204,17 +192,15 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
       <hr className="profile-divider" />
 
       {/* Security Settings */}
-      
       <div className="profile-section">
         <h3 className="profile-section-title">Security Settings</h3>
         
         <div className="security-actions">
-          <button className="btn btn-warning" onClick={() => setShowPasswordForm(!showPasswordForm)}>
+          <button className="btn btn-warning" onClick={() => setShowPasswordForm(!showPasswordForm)} disabled={isLoading}>
             <Lock size={16} /> Change Password
           </button>
         </div>
 
-        
         {message.text && (
           <div className={`form-message ${message.type}`}>
             {message.text}
@@ -234,8 +220,9 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                   onChange={handlePasswordChangeInput}
                   className="profile-input"
                   required
+                  disabled={isLoading}
                 />
-                <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('current')}>
+                <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('current')} disabled={isLoading}>
                   {showPassword.current ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -252,8 +239,9 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                   onChange={handlePasswordChangeInput}
                   className="profile-input"
                   required
+                  disabled={isLoading}
                 />
-                <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('new')}>
+                <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('new')} disabled={isLoading}>
                   {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
@@ -270,15 +258,18 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                   onChange={handlePasswordChangeInput}
                   className="profile-input"
                   required
+                  disabled={isLoading}
                 />
-                <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('confirm')}>
+                <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('confirm')} disabled={isLoading}>
                   {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
             <div className="security-actions">
-              <button type="submit" className="btn btn-success">Update Password</button>
+              <button type="submit" className="btn btn-success" disabled={isLoading}>
+                {isLoading ? 'Updating...' : 'Update Password'}
+              </button>
               <button
                 type="button"
                 className="btn btn-outline-secondary"
@@ -287,6 +278,7 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                   setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
                   setMessage({ type: '', text: '' });
                 }}
+                disabled={isLoading}
               >
                 Cancel
               </button>
@@ -306,7 +298,7 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
             These actions will affect your account and data. Please proceed with caution.
           </p>
           <div className="account-management-actions"> 
-            <button className="btn btn-danger" onClick={handleDeleteAccountClick}>
+            <button className="btn btn-danger" onClick={handleDeleteAccountClick} disabled={isLoading}>
               <Trash2 size={16} /> Delete Account
             </button>
           </div>
@@ -338,8 +330,9 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                     className="profile-input"
                     required
                     placeholder="Enter your current password"
+                    disabled={isLoading}
                   />
-                  <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('delete')}>
+                  <button type="button" className="password-toggle-btn" onClick={() => toggleVisibility('delete')} disabled={isLoading}>
                     {showPassword.delete ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
@@ -356,6 +349,7 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                   className="profile-input"
                   required
                   placeholder="Type DELETE to confirm"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -363,14 +357,15 @@ const Profile = ({ user, getCustomerTypeDisplay, onEditProfile, onLogout }) => {
                 <button 
                   type="submit" 
                   className="btn btn-danger"
-                  disabled={deleteForm.confirmText !== 'DELETE' || !deleteForm.password}
+                  disabled={deleteForm.confirmText !== 'DELETE' || !deleteForm.password || isLoading}
                 >
-                  <Trash2 size={16} /> Permanently Delete Account
+                  <Trash2 size={16} /> {isLoading ? 'Deleting...' : 'Permanently Delete Account'}
                 </button>
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
                   onClick={handleCancelDelete}
+                  disabled={isLoading}
                 >
                   Cancel
                 </button>

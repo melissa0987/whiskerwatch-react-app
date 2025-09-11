@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../../services/apiService';
 import '../../css/dashboard/EditProfile.css';
 
-const EditProfile = ({ user, onClose, onSave, refreshData }) => {
+const EditProfile = ({ user, onClose, onSave}) => {
   // Add useEffect to manage body class for modal
   useEffect(() => {
     document.body.classList.add('modal-open');
@@ -44,6 +45,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,7 +74,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
     
     if (!editForm.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!editForm.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!editForm.username.trim()) newErrors.username = 'username is required';
+    if (!editForm.username.trim()) newErrors.username = 'Username is required';
     if (!editForm.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(editForm.email)) {
@@ -101,10 +103,14 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
       return;
     }
 
+    setIsSubmitting(true);
+    setErrors({});
+
     // Format the complete address
     const formattedAddress = formatAddress(editForm.address);
     
     const updatedData = {
+      id: user.id, // IMPORTANT: Preserve the user ID
       username: editForm.username,
       email: editForm.email,
       password: null, // Don't update password through profile edit
@@ -117,16 +123,32 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
       isActive: user.isActive !== undefined ? user.isActive : true // Keep existing status
     };
 
-    console.log("Updated profile data:", updatedData);
+    console.log("Updating profile with data:", updatedData);
     
-    // Call the correct parent function
-    if (onSave) {
-      onSave(updatedData); // This will update the user and close modal
-    }
-    
-    // Refresh data after successful update
-    if (refreshData) {
-      await refreshData();
+    try {
+      // 1. MAKE API CALL TO BACKEND TO SAVE DATA
+      const response = await apiService.updateUserProfile(user.id, updatedData);
+      console.log("Backend response:", response);
+      
+      if (response.success) {
+        console.log("Profile updated successfully in database");
+        
+        // 2. Update frontend context only after successful backend save
+        if (onSave) {
+          onSave(updatedData);
+        }
+        
+        // Modal will close automatically via onSave
+      } else {
+        // Handle API error
+        console.error("Failed to update profile:", response.message);
+        setErrors({ submit: response.message || "Failed to update profile" });
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setErrors({ submit: "Network error. Please try again." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -150,7 +172,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
       <div className="auth-modal">
         <div className="auth-modal-header">
           <h2>Edit Profile</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose} disabled={isSubmitting}>×</button>
         </div>
 
         <div className="auth-modal-body">
@@ -165,6 +187,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                     value={editForm.firstName}
                     onChange={handleChange}
                     className={errors.firstName ? 'error' : ''}
+                    disabled={isSubmitting}
                   />
                   {errors.firstName && <div className="error-text">{errors.firstName}</div>}
                 </div>
@@ -176,6 +199,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                     value={editForm.lastName}
                     onChange={handleChange}
                     className={errors.lastName ? 'error' : ''}
+                    disabled={isSubmitting}
                   />
                   {errors.lastName && <div className="error-text">{errors.lastName}</div>}
                 </div>
@@ -185,10 +209,11 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                 <input 
                   type="text" 
                   name="username"
-                  placeholder="username"
+                  placeholder="Username"
                   value={editForm.username}
                   onChange={handleChange}
                   className={errors.username ? 'error' : ''}
+                  disabled={isSubmitting}
                 />
                 {errors.username && <div className="error-text">{errors.username}</div>}
               </div>
@@ -201,6 +226,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                   value={editForm.email}
                   onChange={handleChange}
                   className={errors.email ? 'error' : ''}
+                  disabled={isSubmitting}
                 />
                 {errors.email && <div className="error-text">{errors.email}</div>}
               </div>
@@ -213,6 +239,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                   value={editForm.phoneNumber}
                   onChange={handleChange}
                   className={errors.phoneNumber ? 'error' : ''}
+                  disabled={isSubmitting}
                 />
                 {errors.phoneNumber && <div className="error-text">{errors.phoneNumber}</div>}
               </div>
@@ -222,6 +249,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                   name="customerTypeId" 
                   value={editForm.customerTypeId} 
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 >
                   <option value={1}>Pet Owner</option>
                   <option value={2}>Pet Sitter</option> 
@@ -244,6 +272,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                   placeholder="Name/Building (optional)"
                   value={editForm.address.name}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -254,6 +283,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                   placeholder="Street Address"
                   value={editForm.address.street}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -265,6 +295,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                     placeholder="City"
                     value={editForm.address.city}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="form-field">
@@ -274,6 +305,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                     placeholder="Province"
                     value={editForm.address.province}
                     onChange={handleChange}
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -285,6 +317,7 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
                   placeholder="Postal Code"
                   value={editForm.address.postalCode}
                   onChange={handleChange}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -299,12 +332,27 @@ const EditProfile = ({ user, onClose, onSave, refreshData }) => {
               </div>
             )}
 
+            {/* Error Display */}
+            {errors.submit && (
+              <div className="error-text" style={{ 
+                color: '#dc3545', 
+                fontSize: '14px', 
+                marginBottom: '16px',
+                padding: '8px',
+                backgroundColor: '#f8d7da',
+                border: '1px solid #f5c6cb',
+                borderRadius: '4px'
+              }}>
+                {errors.submit}
+              </div>
+            )}
+
             <button 
               type="submit" 
               className="submit-btn"
-              disabled={Object.keys(errors).length > 0}
+              disabled={isSubmitting || Object.keys(errors).length > 0}
             >
-              Update Profile
+              {isSubmitting ? 'Updating Profile...' : 'Update Profile'}
             </button>
           </form>
         </div>
