@@ -4,12 +4,12 @@ import apiService from '../../services/apiService';
 import '../../css/dashboard/Bookings.css';
 
 const Bookings = ({ 
-  bookings, 
+  bookings = [], 
   error,  
   formatDate, 
   formatTime, 
   pets = [], 
-  onRefreshBookings 
+  refreshData 
 }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -22,6 +22,29 @@ const Bookings = ({
   const [editErrors, setEditErrors] = useState({});
   const [updating, setUpdating] = useState(false);
 
+  // Default format functions if not provided
+  const safeFormatDate = formatDate || ((date) => {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleDateString();
+    } catch {
+      return 'Invalid Date';
+    }
+  });
+  
+  const safeFormatTime = formatTime || ((time) => {
+    if (!time) return 'N/A';
+    try {
+      return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return time?.slice(0, 5) || 'N/A';
+    }
+  });
+
   // Map API statusName to CSS classes
   const statusClassMap = {
     PENDING: 'pending',
@@ -33,17 +56,21 @@ const Bookings = ({
   };
 
   const getStatusClass = (statusName) => {
+    if (!statusName) return 'unknown-status';
     return statusClassMap[statusName.toUpperCase()] || 'unknown-status';
   };
 
   // Helper functions
   const getPetName = (petId) => {
+    if (!petId || !pets || !Array.isArray(pets)) return `Pet #${petId || 'Unknown'}`;
     const pet = pets.find(p => (p.petId || p.id) === petId);
     return pet ? pet.name : `Pet #${petId}`;
   };
 
   const formatPetNames = (petIds) => {
+    if (!petIds) return 'Unknown Pet';
     if (!Array.isArray(petIds)) return getPetName(petIds);
+    
     const names = petIds.map(id => getPetName(id));
     if (names.length === 1) return names[0];
     if (names.length === 2) return `${names[0]} & ${names[1]}`;
@@ -53,20 +80,24 @@ const Bookings = ({
 
   // Updated permission logic - owners can edit/delete PENDING, COMPLETED, and CANCELLED bookings
   const canEditBooking = (statusName) => {
+    if (!statusName) return false;
     const editableStatuses = ['PENDING', 'COMPLETED', 'CANCELLED'];
     return editableStatuses.includes(statusName.toUpperCase());
   };
 
   const canDeleteBooking = (statusName) => {
+    if (!statusName) return false;
     const deletableStatuses = ['PENDING', 'COMPLETED', 'CANCELLED'];
     return deletableStatuses.includes(statusName.toUpperCase());
   };
 
   // Edit functionality
   const handleEditBooking = (booking) => {
+    if (!booking) return;
+    
     setEditingRequest(booking);
     setEditFormData({
-      bookingDate: booking.bookingDate,
+      bookingDate: booking.bookingDate || '',
       startTime: booking.startTime?.slice(0, 5) || '09:00',
       endTime: booking.endTime?.slice(0, 5) || '17:00',
       location: booking.location || '',
@@ -92,7 +123,7 @@ const Bookings = ({
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!validateEditForm()) return;
+    if (!validateEditForm() || !editingRequest) return;
 
     setUpdating(true);
     try {
@@ -108,7 +139,7 @@ const Bookings = ({
 
       if (response.success) {
         setEditingRequest(null);
-        if (onRefreshBookings) await onRefreshBookings();
+        if (refreshData) await refreshData();
       } else {
         alert('Failed to update the request.');
       }
@@ -127,6 +158,8 @@ const Bookings = ({
   };
 
   const handleDeleteClick = (booking, isGroup = false) => {
+    if (!booking) return;
+    
     // Add validation to ensure we have valid IDs
     if (isGroup) {
       if (!booking.bookingIds || booking.bookingIds.length === 0) {
@@ -187,7 +220,7 @@ const Bookings = ({
         );
       }
 
-      if (onRefreshBookings) await onRefreshBookings();
+      if (refreshData) await refreshData();
     } catch (err) {
       console.error('Delete error:', err);
       setDeleteMessage('Failed to delete booking. Please try again.');
@@ -199,8 +232,12 @@ const Bookings = ({
   };
 
   const groupBookings = (bookings) => {
+    if (!bookings || !Array.isArray(bookings)) return [];
+    
     const groups = {};
     bookings.forEach(booking => {
+      if (!booking) return;
+      
       // Try different possible ID property names
       const bookingId = booking.id || booking.bookingId || booking.bookingNumber;
       
@@ -209,7 +246,7 @@ const Bookings = ({
         return; // Skip this booking
       }
       
-      const key = `${booking.bookingDate}_${booking.startTime}_${booking.endTime}_${booking.specialRequests || 'none'}`;
+      const key = `${booking.bookingDate || 'unknown'}_${booking.startTime || 'unknown'}_${booking.endTime || 'unknown'}_${booking.specialRequests || 'none'}`;
       if (!groups[key]) {
         groups[key] = { 
           ...booking, 
@@ -218,13 +255,28 @@ const Bookings = ({
           id: bookingId  
         };
       } else {
-        groups[key].pets.push(booking.petId);
+        if (booking.petId) groups[key].pets.push(booking.petId);
         groups[key].bookingIds.push(bookingId); 
         delete groups[key].id;
       }
     });
     return Object.values(groups);
   };
+
+  // Safety check for bookings array
+  if (!Array.isArray(bookings)) {
+    return (
+      <div>
+        <div className="section-header">
+          <h2 className="section-title">My Bookings</h2>
+        </div>
+        <div className="empty-state">
+          <Calendar size={48} color="#dee2e6" />
+          <p>Error loading bookings data.</p>
+        </div>
+      </div>
+    );
+  }
 
   const groupedBookings = groupBookings(bookings);
 
@@ -256,7 +308,9 @@ const Bookings = ({
       ) : (
         <div className="bookings-list">
           {groupedBookings.map((booking, index) => {
-            const isMultiPet = booking.pets.length > 1;
+            if (!booking) return null;
+            
+            const isMultiPet = booking.pets && booking.pets.length > 1;
             const petNames = formatPetNames(booking.pets);
             const canEdit = canEditBooking(booking.statusName);
             const canDelete = canDeleteBooking(booking.statusName);
@@ -274,7 +328,7 @@ const Bookings = ({
 
                   <div className="booking-header-right">
                     <span className={`booking-detail-status ${getStatusClass(booking.statusName)}`}>
-                      {booking.statusName.charAt(0) + booking.statusName.slice(1).toLowerCase()}
+                      {booking.statusName ? booking.statusName.charAt(0) + booking.statusName.slice(1).toLowerCase() : 'Unknown'}
                     </span>
 
                     <div className="booking-detail-actions">
@@ -301,10 +355,10 @@ const Bookings = ({
                 </div>
 
                 <div className="booking-detail-grid">
-                  <div><strong>Date:</strong> {formatDate(booking.bookingDate)}</div>
-                  <div><strong>Time:</strong> {formatTime(booking.startTime)} - {formatTime(booking.endTime)}</div>
+                  <div><strong>Date:</strong> {safeFormatDate(booking.bookingDate)}</div>
+                  <div><strong>Time:</strong> {safeFormatTime(booking.startTime)} - {safeFormatTime(booking.endTime)}</div>
                   <div><strong>Total Cost:</strong> ${booking.totalCost ? booking.totalCost.toFixed(2) : '0.00'}</div>
-                  <div><strong>Pet{booking.pets.length > 1 ? 's' : ''}:</strong> {petNames}</div>
+                  <div><strong>Pet{booking.pets && booking.pets.length > 1 ? 's' : ''}:</strong> {petNames}</div>
                 </div>
 
                 {booking.specialRequests && <div className="booking-special-requests"><strong>Special Requests:</strong> {booking.specialRequests}</div>}
@@ -315,7 +369,9 @@ const Bookings = ({
                   {!canEdit && !canDelete && <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded">Read-only</span>}
                 </div>
 
-                {isMultiPet && <div className="mt-2 text-xs text-gray-400">Booking IDs: #{booking.bookingIds.join(', #')}</div>}
+                {isMultiPet && booking.bookingIds && (
+                  <div className="mt-2 text-xs text-gray-400">Booking IDs: #{booking.bookingIds.join(', #')}</div>
+                )}
               </div>
             );
           })}
@@ -333,7 +389,7 @@ const Bookings = ({
 
             <div className="delete-modal-description">
               Are you sure you want to delete the booking for <strong>{formatPetNames(deleteTarget.isGroup ? deleteTarget.booking.pets : [deleteTarget.booking.petId])}</strong>? This action cannot be undone.
-              {deleteTarget.isGroup && (
+              {deleteTarget.isGroup && deleteTarget.booking.bookingIds && (
                 <div className="delete-modal-warning">
                   <p className="delete-modal-warning-text">
                     This will permanently delete {deleteTarget.booking.bookingIds.length} individual bookings for: {formatPetNames(deleteTarget.booking.pets)}
@@ -351,7 +407,6 @@ const Bookings = ({
           </div>
         </div>
       )}
-
 
       {/* ------------------ Edit Modal ------------------ */}
       {editingRequest && (
@@ -473,7 +528,6 @@ const Bookings = ({
           </div>
         </div>
       )}
-
     </div>
   );
 };

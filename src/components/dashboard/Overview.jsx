@@ -3,34 +3,60 @@ import '../../css/Dashboard.css';
 
 const Overview = ({ 
     user, 
-    pets, 
-    bookings, 
+    pets = [], 
+    bookings = [], 
     getCustomerTypeDisplay,  
     formatDate, 
     formatTime,  
   }) => { 
+  
+  // Safety checks
+  if (!user) {
+    return <div>Loading user data...</div>;
+  }
+
+  // Default format functions if not provided
+  const safeFormatDate = formatDate || ((date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString();
+  });
+  
+  const safeFormatTime = formatTime || ((time) => {
+    if (!time) return 'N/A';
+    return time.slice(0, 5);
+  });
+
+  const safeGetCustomerTypeDisplay = getCustomerTypeDisplay || ((typeId) => {
+    switch (typeId) {
+      case 1: return 'Pet Owner';
+      case 2: return 'Pet Sitter';
+      case 3: return 'Pet Owner & Sitter';
+      default: return 'User';
+    }
+  });
+
   return (
     <div className="overview-container">
       <h2 className="section-title">Dashboard Overview</h2>
       
       {/* Stats Cards */}
       <div className="stats-grid">
-        {(user.customerTypeId === 1 ) && (
+        {(user.customerTypeId === 1) && (
           <div className="stats-card pets">
             <h3>My Pets</h3>
-            <p>{pets.length}</p>
+            <p>{pets?.length || 0}</p>
           </div>
         )}
         <div className="stats-card bookings">
           <h3>Total Bookings</h3>
-          <p>{bookings.length}</p>
+          <p>{bookings?.length || 0}</p>
         </div>
         <div className="stats-card account">
           <h3>Account Type</h3>
           <p>
             {user.customerTypeId === 3 
               ? "Owner, Sitter" 
-              : getCustomerTypeDisplay(user.customerTypeId)
+              : safeGetCustomerTypeDisplay(user.customerTypeId)
             }
           </p>
         </div>
@@ -46,15 +72,17 @@ const Overview = ({
       </div>
 
       {/* Recent Activity */}
-      {bookings.length > 0 && (
+      {bookings && bookings.length > 0 && (
         <div className="recent-bookings">
           <h3>Recent Bookings</h3>
           <div className="recent-bookings-grid">
             {bookings.slice(0, 3).map((booking, index) => {
+              if (!booking) return null;
+              
               const petArray = Array.isArray(booking.petId) ? booking.petId : [booking.petId];
               const petNames = petArray
                 .map(id => {
-                  const pet = pets.find(p => (p.petId || p.id) === id);
+                  const pet = pets?.find(p => (p.petId || p.id) === id);
                   return pet ? pet.name : `Pet #${id}`;
                 })
                 .join(', ');
@@ -73,7 +101,7 @@ const Overview = ({
                 <div key={index} className="booking-card">
                   <div className="booking-card-header">
                     <span className="booking-date">
-                      {formatDate(booking.bookingDate)} at {formatTime(booking.startTime)}
+                      {safeFormatDate(booking.bookingDate)} at {safeFormatTime(booking.startTime)}
                     </span>
                     <span className={`booking-status ${statusClass}`}>
                       {booking.statusName
@@ -98,7 +126,7 @@ const Overview = ({
                     )}
                     {booking.endTime && (
                       <div className="booking-info-row">
-                        <strong>Duration:</strong> {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                        <strong>Duration:</strong> {safeFormatTime(booking.startTime)} - {safeFormatTime(booking.endTime)}
                       </div>
                     )}
                     {booking.specialRequests && (
@@ -120,9 +148,8 @@ const Overview = ({
         </div>
       )}
 
-
       {/* No bookings message */}
-      {bookings.length === 0 && (
+      {(!bookings || bookings.length === 0) && (
         <div className="no-bookings-message">
           <h3>No Bookings Yet</h3>
           <p>

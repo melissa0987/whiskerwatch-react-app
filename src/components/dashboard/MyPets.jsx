@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { PawPrint, Plus, Edit2, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import AddPetModal from "./pets/AddPet";
 import EditPetModal from "./pets/EditPet";
+import apiService from "../../services/apiService";
 import "../../css/dashboard/MyPets.css";
 
-const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
+const MyPets = ({ user, pets, error, getPetTypeDisplay, refreshData }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
@@ -12,17 +13,12 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
   const [messageType, setMessageType] = useState("");
   const [petTypes, setPetTypes] = useState([]);
 
-  const url = `http://localhost:8080/api/pets/`;
-
-  // Set pet types (using fallback data since API endpoint doesn't exist yet)
   useEffect(() => {
     const fetchPetTypes = async () => {
       try {
-        // Try to fetch from API first
         const res = await fetch("http://localhost:8080/api/pet-types");
         if (!res.ok) throw new Error("Failed to load pet types");
         const data = await res.json();
-        // Map to match expected format if needed
         const mappedTypes = data.map(type => ({
           id: type.id,
           name: type.typeName || type.name
@@ -30,7 +26,6 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
         setPetTypes(mappedTypes);
       } catch (err) {
         console.error("Failed to fetch pet types:", err);
-        // Use fallback data since API endpoint doesn't exist yet
         setPetTypes([
           { id: 1, name: "Dog" },
           { id: 2, name: "Cat" },
@@ -59,17 +54,17 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
     }, 5000);
   };
 
-  const handleAddPetSuccess = (successMessage) => {
+  const handleAddPetSuccess = async (successMessage) => {
     showMessage(successMessage, "success");
     setShowAddModal(false);
-    if (onRefreshPets) onRefreshPets(); // ensure refresh
+    await refreshData(); // Use the single refresh function
   };
 
-  const handleEditPetSuccess = (successMessage) => {
+  const handleEditPetSuccess = async (successMessage) => {
     showMessage(successMessage, "success");
     setShowEditModal(false);
     setSelectedPet(null);
-    if (onRefreshPets) onRefreshPets(); // ensure refresh
+    await refreshData(); // Use the single refresh function
   };
 
   const handleEditPet = (pet) => {
@@ -82,13 +77,16 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, onRefreshPets }) => {
     if (!window.confirm(`Are you sure you want to delete ${petName}? This action cannot be undone.`)) return;
     
     try {
-      const response = await fetch(`${url}${petId}`, { method: "DELETE" });
-      if (response.ok) {
-        showMessage(`${petName} has been deleted successfully.`, "success");
-        if (onRefreshPets) onRefreshPets();
+      console.log('Attempting to delete pet with ID:', petId);
+      
+      const response = await apiService.deletePet(petId);
+      console.log('Delete response:', response);
+      
+      if (response.success) {
+        showMessage(response.data?.message || `${petName} has been deleted successfully.`, "success");
+        await refreshData(); // Use the single refresh function
       } else {
-        const errorText = await response.text();
-        showMessage(`Failed to delete pet: ${errorText || "Unknown error"}`, "error");
+        showMessage(`Failed to delete pet: ${response.message || "Unknown error"}`, "error");
       }
     } catch (error) {
       console.error("Error deleting pet:", error);

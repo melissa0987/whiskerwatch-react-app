@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../../css/dashboard/EditProfile.css';
 
-const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
+const EditProfile = ({ user, onClose, onSave, refreshData }) => {
   // Add useEffect to manage body class for modal
   useEffect(() => {
     document.body.classList.add('modal-open');
@@ -9,8 +9,6 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
       document.body.classList.remove('modal-open');
     };
   }, []);
-
-  
 
   // Parse existing address or set defaults
   const parseAddress = (address) => {
@@ -96,7 +94,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
     return parts.join(', ');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -121,14 +119,14 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
 
     console.log("Updated profile data:", updatedData);
     
-    // Call parent update method
-    if (onUpdateProfile) {
-      onUpdateProfile(updatedData);
+    // Call the correct parent function
+    if (onSave) {
+      onSave(updatedData); // This will update the user and close modal
     }
     
-    // Call success callback
-    if (onSuccess) {
-      onSuccess('Profile updated successfully!');
+    // Refresh data after successful update
+    if (refreshData) {
+      await refreshData();
     }
   };
 
@@ -139,7 +137,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
     }
   };
 
-  const getCustomerTypeDisplay = (customerTypeId) => {
+  const getCustomerTypeDisplayLocal = (customerTypeId) => {
     switch (customerTypeId) {
       case 1: return 'Pet Owner';
       case 2: return 'Pet Sitter'; 
@@ -231,7 +229,7 @@ const EditProfile = ({ user, onClose, onSuccess, onUpdateProfile }) => {
               </div>
 
               <p>
-                Current account type: <strong>{getCustomerTypeDisplay(editForm.customerTypeId)}</strong>
+                Current account type: <strong>{getCustomerTypeDisplayLocal(editForm.customerTypeId)}</strong>
               </p>
             </div>
 

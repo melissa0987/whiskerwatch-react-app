@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PawPrint, User, Settings, Calendar, Search, Briefcase } from 'lucide-react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import apiService from '../services/apiService';
 import Header from '../components/homepage/Header';
 import Overview from '../components/dashboard/Overview';
@@ -12,379 +13,247 @@ import EditProfile from '../components/dashboard/EditProfile';
 import Footer from '../components/homepage/Footer';
 import SittingRequestPage from '../components/dashboard/SittingRequestPage'; 
 import SittingJobs from '../components/dashboard/SittingJobs';
-// Add this import for the Browse Requests component
-import SittingRequests from '../components/dashboard/SittingRequestPage'; 
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 import '../css/Dashboard.css'; 
 
-const Dashboard = ({ user, onLogout }) => {
+const Dashboard = () => {
+  const { user, logout, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [pets, setPets] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState(user);
-  const [editingBooking, setEditingBooking] = useState(null);
 
   const fetchUserData = async () => {
+    if (!user) return;
+    
     setLoading(true);
     setError('');
     
     try {
-      console.log('Fetching data for user:', currentUser);
+      console.log('Fetching data for user:', user);
       
-      // Only attempt to fetch data if user is an owner (customerTypeId 1 or 3)
-      if (currentUser.customerTypeId === 1) {
+      // Fetch pets for owners
+      if (user.customerTypeId === 1) {
         try {
-          console.log('Fetching pets for owner ID:', currentUser.id);
-          const petsData = await apiService.getPetsByOwner(currentUser.id);
-          console.log('Pets data:', petsData);
-          setPets(petsData.success ? petsData.data : []);
-        } catch (corsError) {
-          console.warn('CORS error fetching pets - using mock data for now', corsError);
+          const petsResponse = await apiService.getPetsByOwner(user.id);
+          if (petsResponse.success) {
+            setPets(petsResponse.data || []);
+          } else {
+            setPets([]);
+          }
+        } catch (petsError) {
+          console.warn('Error fetching pets:', petsError);
           setPets([]);
         }
 
         try {
-          console.log('Fetching owner bookings for user ID:', currentUser.id);
-          const ownerBookingsData = await apiService.getBookingsByOwner(currentUser.id);
-          console.log('Owner bookings data:', ownerBookingsData);
-          setBookings(ownerBookingsData.success ? ownerBookingsData.data : []);
-        } catch (corsError) {
-          console.warn('CORS error fetching bookings - using mock data for now', corsError);
+          const ownerBookingsResponse = await apiService.getBookingsByOwner(user.id);
+          if (ownerBookingsResponse.success) {
+            setBookings(ownerBookingsResponse.data || []);
+          } else {
+            setBookings([]);
+          }
+        } catch (bookingsError) {
+          console.warn('Error fetching owner bookings:', bookingsError);
+          setBookings([]);
+        }
+      }
+      
+      // Fetch bookings for sitters
+      if (user.customerTypeId === 2) {
+        try {
+          const sitterBookingsResponse = await apiService.getBookingsBySitter(user.id);
+          if (sitterBookingsResponse.success) {
+            setBookings(sitterBookingsResponse.data || []);
+          } else {
+            setBookings([]);
+          }
+        } catch (sitterBookingsError) {
+          console.warn('Error fetching sitter bookings:', sitterBookingsError);
           setBookings([]);
         }
       }
 
-      // If user is also a sitter (customerTypeId 2 or 3), fetch sitter bookings
-      if (currentUser.customerTypeId === 2 ) {
-        try {
-          console.log('Fetching sitter bookings for user ID:', currentUser.id);
-          const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
-          console.log('Sitter bookings data:', sitterBookingsData);
-          
-        } catch (corsError) {
-          console.warn('CORS error fetching sitter bookings - using mock data for now', corsError);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      if (err.message && err.message.includes('CORS')) {
-        setError('Unable to connect to server. Please check that your backend is running and CORS is configured properly.');
-      } else {
-        setError('Failed to load data. Please try again.');
-      }
+    } catch (generalError) {
+      console.error('General error fetching user data:', generalError);
+      setError('Failed to load dashboard data. Please try refreshing the page.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (currentUser && currentUser.id) {
-      fetchUserData();
-    }
-  }, [currentUser]);
+    fetchUserData();
+  }, [user]);
 
-  // Set up the global edit booking function for the Bookings component
-  useEffect(() => {
-    window.editBooking = (booking) => {
-      setEditingBooking(booking);
-      setActiveTab('request');
-    };
+  // This is the ONE refresh function we'll use everywhere
+  const refreshData = async () => {
+    await fetchUserData();
+  };
 
-    return () => {
-      delete window.editBooking;
-    };
-  }, []);
-
-  // Utility functions
   const getCustomerTypeDisplay = (customerTypeId) => {
     switch (customerTypeId) {
       case 1: return 'Pet Owner';
       case 2: return 'Pet Sitter';
-      case 3: return 'Both';
-      default: return 'Unknown';
-    }
-  };
-
-  const getBookingStatusDisplay = (statusId) => {
-    switch (statusId) {
-      case 1: return 'Pending';
-      case 2: return 'Confirmed';
-      case 3: return 'In Progress';
-      case 4: return 'Completed';
-      case 5: return 'Cancelled';
-      case 6: return 'Rejected';
-      default: return 'Unknown';
-    }
-  };
-
-  const getPetTypeDisplay = (typeId) => {
-    const petTypes = {
-      1: 'Dog', 2: 'Cat', 3: 'Bird', 4: 'Fish', 5: 'Rabbit',
-      6: 'Hamster', 7: 'Guinea Pig', 8: 'Reptile', 9: 'Ferret', 10: 'Chinchilla'
-    };
-    return petTypes[typeId] || 'Unknown';
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-CA');
-  };
-
-  const formatTime = (timeString) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const handleUpdateProfile = async (updatedData) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/users/${currentUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedData)
-      });
-      
-      if (response.ok) {
-        setCurrentUser(prev => ({ ...prev, ...updatedData }));
-        setShowEditModal(false);
-        console.log('Profile updated successfully');
-      } else {
-        console.error('Failed to update profile');
-      }
-    } catch (error) {
-      console.error('Failed to update profile:', error);
+      case 3: return 'Pet Owner & Sitter';
+      default: return 'User';
     }
   };
 
   const handleEditProfile = () => {
-    console.log('handleEditProfile called - opening modal');
     setShowEditModal(true);
-    console.log('Modal should be open, showEditModal:', true);
   };
 
-  const getPetName = (petId) => {
-    const pet = pets.find(p => p.id === petId);
-    return pet ? pet.name : "Unknown Pet";
+  const handleProfileUpdate = async (updatedUser) => {
+    updateUser(updatedUser);
+    setShowEditModal(false);
+    await refreshData(); // Refresh after profile update
   };
 
-  if (loading) {
-    return (
-      <div className="dashboard-loading">
-        Loading your dashboard...
-      </div>
-    );
+  if (!user) {
+    return <LoadingSpinner message="Loading dashboard..." />;
   }
 
-  // Define navigation items based on user type
-  const navigationItems = [
-    { id: 'overview', label: 'Overview', icon: User },
-    { id: 'profile', label: 'Profile', icon: Settings }
-  ];
+  const renderActiveTab = () => {
+    const commonProps = {
+      user,
+      pets,
+      bookings,
+      loading,
+      error,
+      getCustomerTypeDisplay,
+      refreshData // Pass the refresh function to ALL components
+    };
 
-  // Add owner-specific tabs
-  if (currentUser.customerTypeId === 1) {
-    navigationItems.push(
-      { id: 'pets', label: 'My Pets', icon: PawPrint },
-      { id: 'bookings', label: 'My Bookings', icon: Calendar },
-      { id: 'request', label: 'Request Sitting', icon: PawPrint }
-    );
-  }
-
-  // Add sitter-specific tabs
-  if (currentUser.customerTypeId === 2 ) {
-    navigationItems.push(
-      { id: 'sitting-requests', label: 'Browse Requests', icon: Search },
-      { id: 'sitting-jobs', label: 'My Jobs', icon: Briefcase }
-    );
-  }
-
-  const refreshPets = async () => {
-    if (currentUser.customerTypeId === 1 ) {
-      try {
-        console.log('Refreshing pets for user:', currentUser.id);
-        const petsData = await apiService.getPetsByOwner(currentUser.id);
-        console.log('Refreshed pets data:', petsData);
-        setPets(petsData.success ? petsData.data : []);
-      } catch (error) {
-        console.error('Error refreshing pets:', error);
-      }
+    switch (activeTab) {
+      case 'overview':
+        return <Overview {...commonProps} />;
+      case 'pets':
+        return user.customerTypeId === 1 ? 
+          <MyPets {...commonProps} /> : 
+          <div className="no-access">This section is only available for pet owners.</div>;
+      case 'bookings':
+        return <Bookings {...commonProps} />;
+      case 'profile':
+        return (
+          <Profile 
+            {...commonProps}
+            onEditProfile={handleEditProfile}
+            onLogout={logout}
+          />
+        );
+      case 'requests':
+        return user.customerTypeId === 2 ? 
+          <SittingRequestPage {...commonProps} /> : 
+          <div className="no-access">This section is only available for pet sitters.</div>;
+      case 'jobs':
+        return user.customerTypeId === 2 ? 
+          <SittingJobs {...commonProps} /> : 
+          <div className="no-access">This section is only available for pet sitters.</div>;
+      default:
+        return <Overview {...commonProps} />;
     }
   };
-
-  const refreshBookings = async () => {
-    if (!currentUser) return;
-
-    try {
-      let newBookings = [];
-
-      // Owner bookings
-      if (currentUser.customerTypeId === 1 ) {
-        const ownerBookingsData = await apiService.getBookingsByOwner(currentUser.id);
-        if (ownerBookingsData.success) newBookings = [...newBookings, ...ownerBookingsData.data];
-      }
-
-      // Sitter bookings
-      if (currentUser.customerTypeId === 2 ) {
-        const sitterBookingsData = await apiService.getBookingsBySitter(currentUser.id);
-        if (sitterBookingsData.success) newBookings = [...newBookings, ...sitterBookingsData.data];
-      }
-
-      setBookings(newBookings);
-    } catch (err) {
-      console.error('Error refreshing bookings:', err);
-    }
-  };
-
-
-
-  // Component props object to avoid repetition
-  const componentProps = {
-    user: currentUser,
-    pets,
-    bookings,
-    error,
-    getCustomerTypeDisplay,
-    getBookingStatusDisplay,
-    getPetTypeDisplay,
-    formatDate,
-    formatTime,
-    onUpdateProfile: handleUpdateProfile,
-    onEditProfile: handleEditProfile,
-    onRefreshPets: refreshPets, 
-    onRefreshBookings: refreshBookings
-  };
-
-  console.log('Dashboard render - showEditModal:', showEditModal);
 
   return (
-    <div className="dashboard-container">
-      <Header currentUser={currentUser} onLogout={onLogout} />
-
-      {/* Main Content */}
-      <div className="dashboard-main">
-        {/* Navigation Tabs */}
-        <div className="dashboard-nav-container">
-          <nav className="dashboard-nav">
-            {navigationItems.map(({ id, label, icon}) => (
+    <div className="min-h-screen bg-gray-50">
+      <Header 
+        currentUser={user} 
+        onLogout={logout}
+        isAuthenticated={true}
+      />
+      
+      <div className="dashboard-container">
+        <div className="dashboard-sidebar">
+          <div className="sidebar-header">
+            <h2>Dashboard</h2>
+            <p>Welcome back, {user.firstName}!</p>
+          </div>
+          
+          <nav className="sidebar-nav">
+            <button
+              className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              <PawPrint size={20} />
+              Overview
+            </button>
+            
+            {user.customerTypeId === 1 && (
               <button
-                key={id}
-                onClick={() => {
-                  setActiveTab(id);
-                  // Clear editing booking when switching tabs (except to request tab)
-                  if (id !== 'request') {
-                    setEditingBooking(null);
-                  }
-                }}
-                className={`nav-tab ${activeTab === id ? 'active' : ''}`}
+                className={`nav-item ${activeTab === 'pets' ? 'active' : ''}`}
+                onClick={() => setActiveTab('pets')}
               >
-                {React.createElement(icon, { size: 20 })}
-                {label}
-                {/* Show indicator if editing a booking on request tab */}
-                {id === 'request' && editingBooking && (
-                  <span className="ml-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                    Editing
-                  </span>
-                )}
+                <PawPrint size={20} />
+                My Pets
               </button>
-            ))}
+            )}
+            
+            <button
+              className={`nav-item ${activeTab === 'bookings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('bookings')}
+            >
+              <Calendar size={20} />
+              Bookings
+            </button>
+            
+            {user.customerTypeId === 2 && (
+              <>
+                <button
+                  className={`nav-item ${activeTab === 'requests' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('requests')}
+                >
+                  <Search size={20} />
+                  Browse Requests
+                </button>
+                
+                <button
+                  className={`nav-item ${activeTab === 'jobs' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('jobs')}
+                >
+                  <Briefcase size={20} />
+                  My Jobs
+                </button>
+              </>
+            )}
+            
+            <button
+              className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+              onClick={() => setActiveTab('profile')}
+            >
+              <User size={20} />
+              Profile
+            </button>
           </nav>
         </div>
-
-        {/* Tab Content */}
-        <div className="dashboard-content">
+        
+        <div className="dashboard-main">
           {error && (
-            <div className="error-message">
-              {error}
+            <div className="error-banner">
+              <p>{error}</p>
+              <button onClick={refreshData} className="retry-button">
+                Retry
+              </button>
             </div>
           )}
-
-          {/* Render active tab component */}
-          {activeTab === 'overview' && <Overview
-            user={user}
-            pets={pets}
-            bookings={bookings}
-            getCustomerTypeDisplay={getCustomerTypeDisplay}
-            getBookingStatusDisplay={getBookingStatusDisplay}
-            formatDate={formatDate}
-            formatTime={formatTime}
-            getPetName={getPetName}
-          />}
           
- 
-          {activeTab === 'pets' && <MyPets {...componentProps} />}
-          {activeTab === 'bookings' && (
-            <Bookings 
-              {...componentProps} 
-              pets={pets} 
-              onEditBooking={(booking) => {
-                setEditingBooking(booking);
-                setActiveTab('request');
-              }}
-            />
-          )}
-          {activeTab === 'request' && (
-            <SittingRequestPage 
-              {...componentProps} 
-              editingBooking={editingBooking}
-              onEditComplete={() => setEditingBooking(null)}
-            />
-          )}
-          
-          {/* Sitter-specific tabs */}
-          {activeTab === 'sitting-requests' && (
-            <SittingRequests 
-              {...componentProps}
-            />
-          )}
-
-          {activeTab === 'sitting-jobs' && (
-            <SittingJobs
-              user={user}
-              onRefreshBookings={refreshBookings}
-              formatDate={formatDate}
-              formatTime={formatTime}
-              getPetTypeDisplay={getPetTypeDisplay}   
-            />
-          )}
-          
-          {/* Profile tab */}
-          {activeTab === 'profile' && (
-            <Profile 
-              user={currentUser} 
-              getCustomerTypeDisplay={getCustomerTypeDisplay} 
-              onEditProfile={handleEditProfile}
-              onLogout={onLogout} 
-            />
-          )}
+          {renderActiveTab()}
         </div>
       </div>
-
-      {/* Edit Profile Modal - Render at top level */}
+      
       {showEditModal && (
-        <div>
-          {console.log('Rendering EditProfile modal')}
-          <EditProfile 
-            user={currentUser}
-            onClose={() => {
-              console.log('Modal close requested');
-              setShowEditModal(false);
-            }}
-            onSuccess={(message) => {
-              console.log('Modal success:', message);
-              setShowEditModal(false);
-            }}
-            onUpdateProfile={handleUpdateProfile}
-          />
-        </div>
+        <EditProfile
+          user={user}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleProfileUpdate}
+          getCustomerTypeDisplay={getCustomerTypeDisplay}
+        />
       )}
-
-      <Footer/>
+      
+      <Footer currentUser={user} />
     </div>
   );
 };

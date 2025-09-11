@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import '../css/AuthModal.css'; // Custom CSS
+ 
+import React, { useState, useEffect } from 'react';
+import { Eye, EyeOff, X } from 'lucide-react';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import '../css/AuthModal.css';
 
-const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiService, defaultCustomerType }) => {
+const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, defaultCustomerType }) => {
+  const { login, signup, isLoading, error, clearError } = useAuth();
+  
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -11,50 +15,97 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
     lastName: '',
     phoneNumber: '',
     address: '',
-    customerType: defaultCustomerType || '' 
+    customerType: defaultCustomerType || ''
   });
 
-  // Password visibility state
   const [showPassword, setShowPassword] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [localMessage, setLocalMessage] = useState('');
 
-  React.useEffect(() => {
+  // Update customer type when modal opens
+  useEffect(() => {
     if (isOpen && defaultCustomerType) {
       setFormData(prev => ({ ...prev, customerType: defaultCustomerType }));
     }
   }, [isOpen, defaultCustomerType]);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
+  // Clear errors when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      clearError();
+      setLocalMessage('');
+      setValidationErrors({});
+    }
+  }, [isOpen, clearError]);
+
+  // Clear form when switching modes
+  useEffect(() => {
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      phoneNumber: '',
+      address: '',
+      customerType: defaultCustomerType || ''
+    });
+    setValidationErrors({});
+    setLocalMessage('');
+  }, [mode, defaultCustomerType]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async () => {
-    console.log('handleSubmit called with mode:', mode);
-    console.log('formData:', formData);
+  // Form validation
+  const validateForm = () => {
+    const errors = {};
+
+    if (mode === 'signup') {
+      if (!formData.firstName.trim()) errors.firstName = 'First name is required';
+      if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
+      if (!formData.username.trim()) errors.username = 'Username is required';
+      if (!formData.phoneNumber.trim()) errors.phoneNumber = 'Phone number is required';
+      if (!formData.address.trim()) errors.address = 'Address is required';
+      if (!formData.customerType) errors.customerType = 'Please select a customer type';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.password.trim()) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     
-    setIsSubmitting(true);
-    setMessage('');
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
 
     try {
+      let response;
+      
       if (mode === 'login') {
-        console.log('Attempting login...');
-        const response = await apiService.login(formData.email, formData.password);
-        console.log('Login response:', response);
-        
-        if (response.success) {
-          console.log('Login successful, calling onAuthSuccess with user:', response.user);
-          setMessage('Login successful!');
-          onAuthSuccess(response.user);
-          setTimeout(() => {
-            console.log('Closing modal...');
-            onClose();
-          }, 1000);
-        } else {
-          console.log('Login failed:', response.message);
-          setMessage(response.message || 'Login failed');
-        }
+        response = await login(formData.email, formData.password);
       } else {
-        console.log('Attempting signup...');
         const signupData = {
           ...formData,
           customerTypeId:
@@ -62,148 +113,220 @@ const AuthModal = ({ isOpen, onClose, mode, onSwitchMode, onAuthSuccess, apiServ
             formData.customerType === 'SITTER' ? 2 :
             null
         };
-        console.log('Signup data:', signupData);
-        
-        const response = await apiService.signup(signupData);
-        console.log('Signup response:', response);
-        
-        if (response.success) {
-          console.log('Signup successful, calling onAuthSuccess with user:', response.user);
-          setMessage('Signup successful!');
-          onAuthSuccess(response.user);
-          setTimeout(() => {
-            console.log('Closing modal...');
-            onClose();
-          }, 1000);
-        } else {
-          console.log('Signup failed:', response.message);
-          setMessage(response.message || 'Signup failed');
-        }
+        response = await signup(signupData);
+      }
+
+      if (response.success) {
+        setLocalMessage('Success! Welcome!');
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } else {
+        setLocalMessage(response.message || 'Operation failed');
       }
     } catch (err) {
-      console.error('Error during auth:', err);
-      setMessage('Server error. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Auth error:', err);
+      setLocalMessage('An unexpected error occurred');
     }
   };
 
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const isFormValid = () => {
-    if (mode === 'login') return formData.email && formData.password;
-    return formData.username && formData.email && formData.password &&
-           formData.firstName && formData.lastName && formData.phoneNumber && formData.address;
-  };
+  const displayMessage = localMessage || error;
 
   return (
-    <div className="auth-modal-overlay">
-      <div className="auth-modal">
-        <div className="auth-modal-header">
-          <h2>{mode === 'login' ? 'Login' : 'Sign Up'}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-
-        <div className="auth-modal-body">
-          {mode === 'signup' && (
-            <>
-              <div className="input-row">
-                <input 
-                  type="text" 
-                  name="firstName" 
-                  placeholder="First Name" 
-                  value={formData.firstName} 
-                  onChange={handleInputChange} 
-                />
-                <input 
-                  type="text" 
-                  name="lastName" 
-                  placeholder="Last Name" 
-                  value={formData.lastName} 
-                  onChange={handleInputChange} 
-                />
-              </div>
-              <input 
-                type="text" 
-                name="username" 
-                placeholder="username" 
-                value={formData.username} 
-                onChange={handleInputChange} 
-              />
-            </>
-          )}
-
-          <input 
-            type="email" 
-            name="email" 
-            placeholder="Email" 
-            value={formData.email} 
-            onChange={handleInputChange} 
-          />
-          
-          <div className="password-input-container">
-            <input 
-              type={showPassword ? "text" : "password"}
-              name="password" 
-              placeholder="Password" 
-              value={formData.password} 
-              onChange={handleInputChange}
-            />
-            <button 
-              type="button"
-              className="password-toggle-btn"
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-
-          {mode === 'signup' && (
-            <>
-              <input 
-                type="tel" 
-                name="phoneNumber" 
-                placeholder="Phone Number" 
-                value={formData.phoneNumber} 
-                onChange={handleInputChange} 
-              />
-              <textarea 
-                name="address" 
-                placeholder="Address" 
-                value={formData.address} 
-                onChange={handleInputChange} 
-                rows="2" 
-              />
-              <select name="customerType" value={formData.customerType} onChange={handleInputChange}>
-                <option value="OWNER">Pet Owner</option>
-                <option value="SITTER">Pet Sitter</option> 
-              </select>
-            </>
-          )}
-
-          {message && <div className="auth-message">{message}</div>}
-
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{mode === 'login' ? 'Welcome Back' : 'Join WhiskerWatch'}</h2>
           <button 
-            className="submit-btn" 
-            disabled={!isFormValid() || isSubmitting} 
-            onClick={handleSubmit}
+            type="button" 
+            className="close-button"
+            onClick={onClose}
+            disabled={isLoading}
           >
-            {isSubmitting ? 'Processing...' : (mode === 'login' ? 'Login' : 'Sign Up')}
+            <X size={24} />
           </button>
         </div>
 
-        <div className="auth-modal-footer">
-          <p>
-            {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-            <button onClick={onSwitchMode}>{mode === 'login' ? 'Sign Up' : 'Login'}</button>
-          </p>
+        <form onSubmit={handleSubmit} className="auth-form">
+          {mode === 'signup' && (
+            <>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>First Name *</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    className={validationErrors.firstName ? 'error' : ''}
+                    disabled={isLoading}
+                  />
+                  {validationErrors.firstName && (
+                    <span className="error-text">{validationErrors.firstName}</span>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Last Name *</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    className={validationErrors.lastName ? 'error' : ''}
+                    disabled={isLoading}
+                  />
+                  {validationErrors.lastName && (
+                    <span className="error-text">{validationErrors.lastName}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Username *</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className={validationErrors.username ? 'error' : ''}
+                  disabled={isLoading}
+                />
+                {validationErrors.username && (
+                  <span className="error-text">{validationErrors.username}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number *</label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  className={validationErrors.phoneNumber ? 'error' : ''}
+                  disabled={isLoading}
+                />
+                {validationErrors.phoneNumber && (
+                  <span className="error-text">{validationErrors.phoneNumber}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>Address *</label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className={validationErrors.address ? 'error' : ''}
+                  disabled={isLoading}
+                />
+                {validationErrors.address && (
+                  <span className="error-text">{validationErrors.address}</span>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label>I am a *</label>
+                <select
+                  name="customerType"
+                  value={formData.customerType}
+                  onChange={handleInputChange}
+                  className={validationErrors.customerType ? 'error' : ''}
+                  disabled={isLoading}
+                >
+                  <option value="">Select one</option>
+                  <option value="OWNER">Pet Owner</option>
+                  <option value="SITTER">Pet Sitter</option>
+                </select>
+                {validationErrors.customerType && (
+                  <span className="error-text">{validationErrors.customerType}</span>
+                )}
+              </div>
+            </>
+          )}
+
+          <div className="form-group">
+            <label>Email *</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className={validationErrors.email ? 'error' : ''}
+              disabled={isLoading}
+            />
+            {validationErrors.email && (
+              <span className="error-text">{validationErrors.email}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label>Password *</label>
+            <div className="password-input-container">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={validationErrors.password ? 'error' : ''}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {validationErrors.password && (
+              <span className="error-text">{validationErrors.password}</span>
+            )}
+          </div>
+
+          {displayMessage && (
+            <div className={`message ${displayMessage.includes('Success') ? 'success' : 'error'}`}>
+              {displayMessage}
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            className="submit-button"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Create Account')}
+          </button>
+        </form>
+
+        <div className="auth-switch">
+          {mode === 'login' ? (
+            <p>
+              Don't have an account?{' '}
+              <button 
+                type="button" 
+                onClick={onSwitchMode}
+                className="link-button"
+                disabled={isLoading}
+              >
+                Sign Up
+              </button>
+            </p>
+          ) : (
+            <p>
+              Already have an account?{' '}
+              <button 
+                type="button" 
+                onClick={onSwitchMode}
+                className="link-button"
+                disabled={isLoading}
+              >
+                Sign In
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>

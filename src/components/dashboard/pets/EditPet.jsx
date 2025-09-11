@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { PawPrint, X } from "lucide-react";
 import "../../../css/dashboard/MyPets.css";
+import apiService from "../../../services/apiService";
 
 const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => {
   const [formData, setFormData] = useState({
@@ -86,7 +87,10 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
       setErrors(validationErrors);
       return;
     }
+    
     setLoading(true);
+    setErrors({}); // Clear any previous errors
+    
     try {
       const petData = {
         name: formData.name.trim(),
@@ -99,23 +103,22 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
         isActive: formData.isActive
       };
 
+      console.log('Updating pet data:', petData);
+      
       const petId = pet.petId || pet.id;
-      const response = await fetch(`http://localhost:8080/api/pets/${petId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(petData),
-      });
+      const response = await apiService.updatePet(petId, petData);
+      console.log('Update pet response:', response);
 
-      if (response.ok) {
-        onSuccess(`${formData.name} updated successfully!`);
+      if (response.success) {
+        const successMessage = response.data?.message || `${formData.name} updated successfully!`;
+        onSuccess(successMessage);
         handleClose();
       } else {
-        const errorText = await response.text();
-        setErrors({ submit: errorText || "Failed to update pet" });
+        setErrors({ submit: response.message || "Failed to update pet" });
       }
     } catch (error) {
       console.error("Error updating pet:", error);
-      setErrors({ submit: "Network error. Please check your connection." });
+      setErrors({ submit: "Network error. Please check your connection and try again." });
     } finally {
       setLoading(false);
     }
@@ -151,155 +154,166 @@ const EditPet = ({ isOpen, onClose, onSuccess, userId, petTypes = [], pet }) => 
           </button>
         </div>
 
-        {/* Pet Name */}
-        <div className="form-group">
-          <label className="form-label">
-            Pet Name <span style={{ color: "#dc3545" }}>*</span>
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            className="form-input"
-            placeholder="Enter pet's name"
-            disabled={loading}
-          />
-          {errors.name && <small className="form-error">{errors.name}</small>}
-        </div>
-
-        {/* Pet Type */}
-        <div className="form-group">
-          <label className="form-label">
-            Pet Type <span style={{ color: "#dc3545" }}>*</span>
-          </label>
-          <select
-            name="typeId"
-            value={formData.typeId}
-            onChange={handleInputChange}
-            className="form-select"
-            disabled={loading}
-          >
-            {availablePetTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-          {errors.typeId && <small className="form-error">{errors.typeId}</small>}
-        </div>
-
-        {/* Age + Weight */}
-        <div className="form-row">
-          <div>
-            <label className="form-label">Age (years)</label>
+        <form onSubmit={handleSubmit}>
+          {/* Pet Name */}
+          <div className="form-group">
+            <label className="form-label">
+              Pet Name <span style={{ color: "#dc3545" }}>*</span>
+            </label>
             <input
-              type="number"
-              name="age"
-              value={formData.age}
+              type="text"
+              name="name"
+              value={formData.name}
               onChange={handleInputChange}
-              placeholder="e.g., 3"
+              className="form-input"
+              placeholder="Enter pet's name"
+              disabled={loading}
+            />
+            {errors.name && <small className="form-error">{errors.name}</small>}
+          </div>
+
+          {/* Pet Type */}
+          <div className="form-group">
+            <label className="form-label">
+              Pet Type <span style={{ color: "#dc3545" }}>*</span>
+            </label>
+            <select
+              name="typeId"
+              value={formData.typeId}
+              onChange={handleInputChange}
+              className="form-select"
+              disabled={loading}
+            >
+              {availablePetTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            {errors.typeId && <small className="form-error">{errors.typeId}</small>}
+          </div>
+
+          {/* Age + Weight */}
+          <div className="form-row">
+            <div>
+              <label className="form-label">Age (years)</label>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleInputChange}
+                placeholder="e.g., 3"
+                className="form-input"
+                disabled={loading}
+                min="0"
+                step="1"
+              />
+              {errors.age && <small className="form-error">{errors.age}</small>}
+            </div>
+            <div>
+              <label className="form-label">Weight (lbs)</label>
+              <input
+                type="number"
+                name="weight"
+                value={formData.weight}
+                onChange={handleInputChange}
+                placeholder="e.g., 25.5"
+                className="form-input"
+                disabled={loading}
+                min="0"
+                step="0.1"
+              />
+              {errors.weight && <small className="form-error">{errors.weight}</small>}
+            </div>
+          </div>
+
+          {/* Breed */}
+          <div className="form-group">
+            <label className="form-label">Breed</label>
+            <input
+              type="text"
+              name="breed"
+              value={formData.breed}
+              onChange={handleInputChange}
+              placeholder="e.g., Golden Retriever"
               className="form-input"
               disabled={loading}
-              min="0"
-              step="1"
             />
-            {errors.age && <small className="form-error">{errors.age}</small>}
+            {errors.breed && <small className="form-error">{errors.breed}</small>}
           </div>
-          <div>
-            <label className="form-label">Weight (lbs)</label>
-            <input
-              type="number"
-              name="weight"
-              value={formData.weight}
+
+          {/* Special Instructions */}
+          <div className="form-group">
+            <label className="form-label">Special Instructions</label>
+            <textarea
+              name="specialInstructions"
+              value={formData.specialInstructions}
               onChange={handleInputChange}
-              placeholder="e.g., 25.5"
-              className="form-input"
-              disabled={loading}
-              min="0"
-              step="0.1"
-            />
-            {errors.weight && <small className="form-error">{errors.weight}</small>}
-          </div>
-        </div>
-
-        {/* Breed */}
-        <div className="form-group">
-          <label className="form-label">Breed</label>
-          <input
-            type="text"
-            name="breed"
-            value={formData.breed}
-            onChange={handleInputChange}
-            placeholder="e.g., Golden Retriever"
-            className="form-input"
-            disabled={loading}
-          />
-          {errors.breed && <small className="form-error">{errors.breed}</small>}
-        </div>
-
-        {/* Special Instructions */}
-        <div className="form-group">
-          <label className="form-label">Special Instructions</label>
-          <textarea
-            name="specialInstructions"
-            value={formData.specialInstructions}
-            onChange={handleInputChange}
-            className="form-textarea"
-            placeholder="Any special care instructions, dietary needs, medications, etc."
-            rows="3"
-            disabled={loading}
-          />
-        </div>
-
-        {/* Active Status */}
-        <div className="form-group">
-          <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="checkbox"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleInputChange}
+              className="form-textarea"
+              placeholder="Any special care instructions, dietary needs, medications, etc."
+              rows="3"
               disabled={loading}
             />
-            Pet is active (available for bookings)
-          </label>
-        </div>
+          </div>
 
-        {/* Submit Error */}
-        {errors.submit && <div className="alert alert-error">{errors.submit}</div>}
+          {/* Active Status */}
+          <div className="form-group">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleInputChange}
+                disabled={loading}
+              />
+              Pet is active (available for bookings)
+            </label>
+          </div>
 
-        {/* Buttons */}
-        <div className="modal-footer">
-          <button className="btn btn-cancel" onClick={handleClose} disabled={loading}>
-            Cancel
-          </button>
-          <button 
-            className="btn btn-update" 
-            onClick={handleSubmit} 
-            disabled={loading}
-            style={{
-              backgroundColor: loading ? "#6c757d" : "#17a2b8",
-              color: "white",
-              border: "none"
-            }}
-          >
-            {loading ? (
-              <>
-                <div className="spinner" />
-                Updating...
-              </>
-            ) : (
-              <>
-                <PawPrint size={14} />
-                Update Pet
-              </>
-            )}
-          </button>
-        </div>
+          {/* Submit Error */}
+          {errors.submit && (
+            <div className="alert alert-error">
+              {errors.submit}
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="modal-footer">
+            <button 
+              type="button" 
+              className="btn btn-cancel" 
+              onClick={handleClose} 
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-update" 
+              disabled={loading}
+              style={{
+                backgroundColor: loading ? "#6c757d" : "#17a2b8",
+                color: "white",
+                border: "none"
+              }}
+            >
+              {loading ? (
+                <>
+                  <div className="spinner" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <PawPrint size={14} />
+                  Update Pet
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default EditPet ;
+export default EditPet;

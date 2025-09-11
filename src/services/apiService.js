@@ -1,100 +1,121 @@
-import axios from "axios";
+class ApiService {
+  constructor() {
+    this.baseURL = 'http://localhost:8080/api';
+    this.token = this.getStoredToken();
+  }
 
-const API_URL = "http://localhost:8080/api"; // adjust if deployed
+  // Token management
+  getStoredToken() {
+    return localStorage.getItem('jwt_token');
+  }
 
-const apiService = {
-  // User Authentication
-  signup: async (userData) => {
+  setToken(token) {
+    this.token = token;
+    localStorage.setItem('jwt_token', token);
+  }
+
+  removeToken() {
+    this.token = null;
+    localStorage.removeItem('jwt_token');
+  }
+
+  // Get headers with Authorization
+  getAuthHeaders() {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    
+    return headers;
+  }
+
+  // Generic API call method with improved error handling
+  async apiCall(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+    const config = {
+      headers: this.getAuthHeaders(),
+      ...options,
+    };
+
     try {
-      const response = await axios.post(`${API_URL}/users`, {
-        username: userData.username,
-        email: userData.email,
-        password: userData.password,
-        roleId: 1, // CUSTOMER role
-        customerTypeId: userData.customerTypeId,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        phoneNumber: userData.phoneNumber,
-        address: userData.address,
-        isActive: true
-      });
+      const response = await fetch(url, config);
       
-      console.log('Signup API response:', response.data);
-      
-      // Check if signup was successful (201 status code)
-      if (response.status === 201) {
-        // After successful signup, fetch the created user by email
-        try {
-          const userResponse = await axios.get(`${API_URL}/users`);
-          if (userResponse.data && Array.isArray(userResponse.data)) {
-            const createdUser = userResponse.data.find(u => u.email === userData.email);
-            if (createdUser) {
-              return {
-                success: true,
-                user: {
-                  id: createdUser.userId,
-                  firstName: createdUser.firstName,
-                  lastName: createdUser.lastName,
-                  username: createdUser.username,
-                  email: createdUser.email,
-                  phoneNumber: createdUser.phoneNumber,
-                  address: createdUser.address,
-                  customerTypeId: getCustomerTypeIdFromName(createdUser.customerTypeName),
-                  roleName: createdUser.roleName
-                },
-                message: 'Account created successfully!'
-              };
-            }
-          }
-        } catch (fetchError) {
-          console.error('Error fetching created user:', fetchError);
-        }
-        
-        return {
-          success: true,
-          user: {
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            username: userData.username,
-            email: userData.email,
-            phoneNumber: userData.phoneNumber,
-            address: userData.address,
-            customerTypeId: userData.customerTypeId
-          },
-          message: 'Account created successfully!'
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Signup failed'
-        };
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        this.removeToken();
+        window.location.href = '/'; // Redirect to login
+        throw new Error('Authentication failed. Please login again.');
       }
+
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      const hasJsonContent = contentType && contentType.includes('application/json');
+      
+      let data = {};
+      
+      // Only try to parse JSON if there's content and it's JSON
+      if (hasJsonContent) {
+        const text = await response.text();
+        if (text.trim()) {
+          try {
+            data = JSON.parse(text);
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            data = { message: 'Invalid response format' };
+          }
+        }
+      }
+      
+      if (!response.ok) {
+        const errorMessage = data.message || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+
+      return { success: true, data, status: response.status };
     } catch (error) {
-      console.error("Signup failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.data?.message || error.response?.statusText || 'Server error during signup'
+      console.error(`API call failed for ${endpoint}:`, error);
+      return { 
+        success: false, 
+        message: error.message || 'An error occurred',
+        status: error.status 
       };
     }
-  },
+  }
 
-  login: async (email, password) => {
+  getCustomerTypeIdFromName(customerTypeName) {
+    switch (customerTypeName?.toUpperCase()) {
+      case 'OWNER':
+      case 'PET OWNER':
+        return 1;
+      case 'SITTER':
+      case 'PET SITTER':
+        return 2; 
+      default:
+        return 1; // Default to owner
+    }
+  }
+
+  // Authentication methods
+  async login(email, password) {
     try {
-      console.log('Attempting login for email:', email);
-      
-      // Use the new auth endpoint
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        email: email,
-        password: password
+      const response = await fetch(`${this.baseURL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
-      
-      console.log('Login API response:', response.data);
-      
-      if (response.data.success && response.data.user) {
-        const user = response.data.user;
+
+      const data = await response.json();
+      console.log('Login response data:', data);
+
+      if (response.ok && data.accessToken) {
+        this.setToken(data.accessToken);
         
-        return {
-          success: true,
+        const user = data.user;
+        return { 
+          success: true, 
           user: {
             id: user.userId,
             firstName: user.firstName,
@@ -103,280 +124,245 @@ const apiService = {
             email: user.email,
             phoneNumber: user.phoneNumber,
             address: user.address,
-            customerTypeId: getCustomerTypeIdFromName(user.customerTypeName),
+            customerTypeId: this.getCustomerTypeIdFromName(user.customerTypeName),
             roleName: user.roleName
           },
-          message: 'Login successful!'
+          token: data.accessToken 
         };
       } else {
-        return {
-          success: false,
-          message: response.data.message || 'Login failed'
+        return { 
+          success: false, 
+          message: data.message || 'Login failed' 
         };
       }
     } catch (error) {
-      console.error("Login failed:", error.response?.data || error.message);
-      
-      if (error.response?.status === 401) {
-        return {
-          success: false,
-          message: error.response.data.message || 'Invalid email or password'
-        };
-      }
-      
-      return {
-        success: false,
-        message: 'Server error during login'
-      };
-    }
-  },
-
-  // User Management
-  getUser: async (userId) => {
-    try {
-      const response = await axios.get(`${API_URL}/users/${userId}`);
-      return {
-        success: true,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Get user failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to get user'
-      };
-    }
-  },
-
-  updateUser: async (userId, userData) => {
-    try {
-      const response = await axios.put(`${API_URL}/users/${userId}`, userData);
-      return {
-        success: response.status === 200,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Update user failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to update user'
-      };
-    }
-  },
-
-  // Pet Management
-  getPetsByOwner: async (ownerId) => {
-    try {
-      const response = await axios.get(`${API_URL}/pets/owner/${ownerId}`);
-      return {
-        success: true,
-        data: response.data || []
-      };
-    } catch (error) {
-      console.error("Get pets failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        data: [],
-        message: error.response?.statusText || 'Failed to get pets'
-      };
-    }
-  },
-
-  createPet: async (petData) => {
-    try {
-      const response = await axios.post(`${API_URL}/pets`, petData);
-      return {
-        success: response.status === 201,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Create pet failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to create pet'
-      };
-    }
-  },
-
-  updatePet: async (petId, petData) => {
-    try {
-      const response = await axios.put(`${API_URL}/pets/${petId}`, petData);
-      return {
-        success: response.status === 200,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Update pet failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to update pet'
-      };
-    }
-  },
-
-  deletePet: async (petId) => {
-    try {
-      const response = await axios.delete(`${API_URL}/pets/${petId}`);
-      return {
-        success: response.status === 204,
-        message: 'Pet deleted successfully'
-      };
-    } catch (error) {
-      console.error("Delete pet failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to delete pet'
-      };
-    }
-  },
-
-  // Booking Management
-  getBookingsByOwner: async (ownerId) => {
-    try {
-      const response = await axios.get(`${API_URL}/bookings/owner/${ownerId}`);
-      return {
-        success: true,
-        data: response.data || []
-      };
-    } catch (error) {
-      console.error("Get bookings failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        data: [],
-        message: error.response?.statusText || 'Failed to get bookings'
-      };
-    }
-  },
-
-  getBookingsBySitter: async (sitterId) => {
-    try {
-      const response = await axios.get(`${API_URL}/bookings/sitter/${sitterId}`);
-      return {
-        success: true,
-        data: response.data || []
-      };
-    } catch (error) {
-      console.error("Get sitter bookings failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        data: [],
-        message: error.response?.statusText || 'Failed to get sitter bookings'
-      };
-    }
-  },
-
-  createBooking: async (bookingData) => {
-    try {
-      const response = await axios.post(`${API_URL}/bookings`, bookingData);
-      return {
-        success: response.status === 201,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Create booking failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to create booking'
-      };
-    }
-  },
-
-  updateBooking: async (bookingId, bookingData) => {
-    try {
-      const response = await axios.put(`${API_URL}/bookings/${bookingId}`, bookingData);
-      return {
-        success: response.status === 200,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Update booking failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to update booking'
-      };
-    }
-  },
-
-  updateBookingStatus: async (bookingId, statusId) => {
-    try {
-      const response = await axios.patch(`${API_URL}/bookings/${bookingId}/status`, {
-        statusId: statusId
-      });
-      return {
-        success: response.status === 200,
-        data: response.data
-      };
-    } catch (error) {
-      console.error("Update booking status failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to update booking status'
-      };
-    }
-  },
-
-  deleteBooking: async (bookingId) => {
-    try {
-      const response = await axios.delete(`${API_URL}/bookings/${bookingId}`);
-      return {
-        success: response.status === 204,
-        message: 'Booking deleted successfully'
-      };
-    } catch (error) {
-      console.error("Delete booking failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        message: error.response?.statusText || 'Failed to delete booking'
-      };
-    }
-  },
-
-  // Additional utility methods
-  getUpcomingBookings: async () => {
-    try {
-      const response = await axios.get(`${API_URL}/bookings/upcoming`);
-      return {
-        success: true,
-        data: response.data || []
-      };
-    } catch (error) {
-      console.error("Get upcoming bookings failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        data: [],
-        message: error.response?.statusText || 'Failed to get upcoming bookings'
-      };
-    }
-  },
-
-  checkSitterAvailability: async (sitterId, date, startTime, endTime) => {
-    try {
-      const response = await axios.get(`${API_URL}/bookings/availability/${sitterId}`, {
-        params: { date, startTime, endTime }
-      });
-      return {
-        success: true,
-        available: response.data
-      };
-    } catch (error) {
-      console.error("Check availability failed:", error.response?.data || error.message);
-      return {
-        success: false,
-        available: false,
-        message: error.response?.statusText || 'Failed to check availability'
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        message: 'Network error. Please try again.' 
       };
     }
   }
-};
 
-// Helper function to convert customer type name to ID
-function getCustomerTypeIdFromName(customerTypeName) {
-  switch (customerTypeName) {
-    case 'OWNER': return 1;
-    case 'SITTER': return 2;
-    case 'BOTH': return 3;
-    default: return 1;
+  async signup(userData) {
+    try {
+      let response;
+      try {
+        response = await fetch(`${this.baseURL}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: userData.username,
+            email: userData.email,
+            password: userData.password,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            phoneNumber: userData.phoneNumber,
+            address: userData.address,
+            customerTypeId: userData.customerTypeId,
+            roleId: 1, // CUSTOMER role
+            isActive: true
+          }),
+        });
+      } catch (authError) {
+        console.log('Auth signup not available, using users endpoint', authError);
+        response = await fetch(`${this.baseURL}/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: userData.username,
+            email: userData.email,
+            password: userData.password,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            phoneNumber: userData.phoneNumber,
+            address: userData.address,
+            customerTypeId: userData.customerTypeId,
+            roleId: 1, // CUSTOMER role
+            isActive: true
+          }),
+        });
+      }
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.token) {
+          this.setToken(data.token);
+          const user = data.userResponse || data.user;
+          return { 
+            success: true, 
+            user: {
+              id: user.userId || user.id,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              username: user.username,
+              email: user.email,
+              phoneNumber: user.phoneNumber,
+              address: user.address,
+              customerTypeId: this.getCustomerTypeIdFromName(user.customerTypeName || user.customerType),
+              roleName: user.roleName || user.role
+            },
+            token: data.token 
+          };
+        } else {
+          const loginResponse = await this.login(userData.email, userData.password);
+          if (loginResponse.success) {
+            return loginResponse;
+          } else {
+            return { 
+              success: true, 
+              user: {
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                username: userData.username,
+                email: userData.email,
+                phoneNumber: userData.phoneNumber,
+                address: userData.address,
+                customerTypeId: userData.customerTypeId
+              },
+              message: 'Account created successfully!' 
+            };
+          }
+        }
+      } else {
+        return { 
+          success: false, 
+          message: data.message || 'Signup failed' 
+        };
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { 
+        success: false, 
+        message: 'Network error. Please try again.' 
+      };
+    }
+  }
+
+  logout() {
+    this.removeToken();
+  }
+
+  isAuthenticated() {
+    return !!this.token;
+  }
+
+  async verifyToken() {
+    if (!this.token) return false;
+    
+    try {
+      const response = await fetch(`${this.baseURL}/auth/verify`, {
+        headers: this.getAuthHeaders(),
+      });
+      
+      if (response.status === 401) {
+        this.removeToken();
+        return false;
+      }
+      
+      return response.ok;
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      this.removeToken();
+      return false;
+    }
+  }
+
+  // Protected API endpoints
+  async getPetsByOwner(ownerId) {
+    return this.apiCall(`/pets/owner/${ownerId}`);
+  }
+
+  async getBookingsByOwner(ownerId) {
+    return this.apiCall(`/bookings/owner/${ownerId}`);
+  }
+
+  async getBookingsBySitter(sitterId) {
+    return this.apiCall(`/bookings/sitter/${sitterId}`);
+  }
+
+  async updateUserProfile(userId, profileData) {
+    return this.apiCall(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  async changePassword(userId, passwordData) {
+    return this.apiCall(`/users/${userId}/password`, {
+      method: 'PUT',
+      body: JSON.stringify(passwordData),
+    });
+  }
+
+  async deleteAccount(userId, deleteData) {
+    return this.apiCall(`/users/${userId}`, {
+      method: 'DELETE',
+      body: JSON.stringify(deleteData),
+    });
+  }
+
+  // Pet management methods
+  async createPet(petData) {
+    console.log('Creating pet with token:', this.token ? 'Present' : 'Missing');
+    const response = await this.apiCall('/pets', { method: 'POST', body: JSON.stringify(petData) });
+     return response;
+  }
+
+  async updatePet(petId, petData) {
+    console.log('Updating pet with token:', this.token ? 'Present' : 'Missing');
+    return this.apiCall(`/pets/${petId}`, {
+      method: 'PUT',
+      body: JSON.stringify(petData),
+    });
+  }
+
+  async deletePet(petId) {
+    console.log('Deleting pet with token:', this.token ? 'Present' : 'Missing');
+    console.log('Authorization header:', this.getAuthHeaders().Authorization);
+    return this.apiCall(`/pets/${petId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Booking management methods
+  async createBooking(bookingData) {
+    return this.apiCall('/bookings', {
+      method: 'POST',
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async updateBooking(bookingId, bookingData) {
+    return this.apiCall(`/bookings/${bookingId}`, {
+      method: 'PUT',
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async deleteBooking(bookingId) {
+    return this.apiCall(`/bookings/${bookingId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async cancelBooking(bookingId) {
+    return this.apiCall(`/bookings/${bookingId}/cancel`, {
+      method: 'PUT',
+    });
+  }
+  
+  async updateBookingStatus(bookingId, statusId) {
+    return this.apiCall(`/bookings/${bookingId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ statusId }),
+    });
+  }
+
+  async getUpcomingBookings() {
+    return this.apiCall('/bookings/upcoming');
   }
 }
 
-export default apiService;
+export default new ApiService();

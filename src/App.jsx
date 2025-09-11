@@ -1,36 +1,38 @@
+import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { useState } from "react";
-import Homepage from "./pages/Homepage";
-import Dashboard from "./pages/Dashboard";
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Homepage from './pages/Homepage';
+import Dashboard from './pages/Dashboard';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
-// Main App Component
-const App = () => { 
-   const [currentUser, setCurrentUser] = useState(null);
-   
-   // Debug logs
-   console.log('App rendering with currentUser:', currentUser);
+// Main App Content Component
+const AppContent = () => {
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
-   const handleLogout = () => {
-     console.log('Logout clicked');
-     setCurrentUser(null);
-   }
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
-   const handleAuthSuccess = (user) => {
-     console.log('handleAuthSuccess called with user:', user);
-     setCurrentUser(user);
-   };
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {isAuthenticated ? (
+        <Dashboard user={user} onLogout={logout} />
+      ) : (
+        <Homepage />
+      )}
+    </div>
+  );
+};
 
-   return (
-     <div className="min-h-screen bg-gray-50">
-        
-       {currentUser ? (
-         <Dashboard user={currentUser} onLogout={handleLogout} />
-       ) : (
-         <Homepage onAuthSuccess={handleAuthSuccess} />
-       )}
-     </div>
-   );
+// Main App Component with Provider
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
 };
 
 export default App;

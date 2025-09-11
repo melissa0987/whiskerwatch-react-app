@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { PawPrint, X } from "lucide-react";
 import "../../../css/dashboard/MyPets.css";
+import apiService from  "../../../services/apiService";
 
 const AddPetModal = ({ isOpen, onClose, onSuccess, userId, petTypes = [] }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     name: "",
     age: "",
     breed: "",
@@ -66,7 +67,10 @@ const AddPetModal = ({ isOpen, onClose, onSuccess, userId, petTypes = [] }) => {
       setErrors(validationErrors);
       return;
     }
+    
     setLoading(true);
+    setErrors({}); // Clear any previous errors
+    
     try {
       const petData = {
         name: formData.name.trim(),
@@ -77,26 +81,29 @@ const AddPetModal = ({ isOpen, onClose, onSuccess, userId, petTypes = [] }) => {
         ownerId: userId,
         typeId: parseInt(formData.typeId),
       };
-      const response = await fetch("http://localhost:8080/api/pets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(petData),
-      });
-      if (response.ok) {
-        onSuccess("Pet added successfully!");
+
+      console.log('Sending pet data:', petData);
+
+      const response = await apiService.createPet(petData);
+      console.log('Create pet response:', response);
+      
+      if (response.success) {
+        // Handle success - check if we have data or just success message
+        const successMessage = response.data?.message || "Pet added successfully!";
+        onSuccess(successMessage);
         handleClose();
       } else {
-        const errorText = await response.text();
-        setErrors({ submit: errorText || "Failed to add pet" });
+        // Handle API error response
+        setErrors({ submit: response.message || "Failed to add pet" });
       }
     } catch (error) {
       console.error("Error adding pet:", error);
-      setErrors({ submit: "Network error. Please check your connection." });
+      setErrors({ submit: "Network error. Please check your connection and try again." });
     } finally {
       setLoading(false);
     }
   };
-
+  
   const handleClose = () => {
     setFormData({
       name: "",
@@ -126,129 +133,144 @@ const AddPetModal = ({ isOpen, onClose, onSuccess, userId, petTypes = [] }) => {
           </button>
         </div>
 
-        {/* Pet Name */}
-        <div className="form-group">
-          <label className="form-label">
-            Pet Name <span style={{ color: "#dc3545" }}>*</span>
-          </label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleInputChange}
-            className="form-input"
-            placeholder="Enter pet's name"
-            disabled={loading}
-          />
-          {errors.name && <small className="form-error">{errors.name}</small>}
-        </div>
-
-        {/* Pet Type */}
-        <div className="form-group">
-          <label className="form-label">
-            Pet Type <span style={{ color: "#dc3545" }}>*</span>
-          </label>
-          <select
-            name="typeId"
-            value={formData.typeId}
-            onChange={handleInputChange}
-            className="form-select"
-            disabled={loading}
-          >
-            {availablePetTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
-          {errors.typeId && <small className="form-error">{errors.typeId}</small>}
-        </div>
-
-        {/* Age + Weight */}
-        <div className="form-row">
-          <div>
-            <label className="form-label">Age (years)</label>
+        <form onSubmit={handleSubmit}>
+          {/* Pet Name */}
+          <div className="form-group">
+            <label className="form-label">
+              Pet Name <span style={{ color: "#dc3545" }}>*</span>
+            </label>
             <input
-              type="number"
-              name="age"
-              value={formData.age}
+              type="text"
+              name="name"
+              value={formData.name}
               onChange={handleInputChange}
-              placeholder="e.g., 3"
+              className="form-input"
+              placeholder="Enter pet's name"
+              disabled={loading}
+            />
+            {errors.name && <small className="form-error">{errors.name}</small>}
+          </div>
+
+          {/* Pet Type */}
+          <div className="form-group">
+            <label className="form-label">
+              Pet Type <span style={{ color: "#dc3545" }}>*</span>
+            </label>
+            <select
+              name="typeId"
+              value={formData.typeId}
+              onChange={handleInputChange}
+              className="form-select"
+              disabled={loading}
+            >
+              {availablePetTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+            {errors.typeId && <small className="form-error">{errors.typeId}</small>}
+          </div>
+
+          {/* Age + Weight */}
+          <div className="form-row">
+            <div>
+              <label className="form-label">Age (years)</label>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleInputChange}
+                placeholder="e.g., 3"
+                className="form-input"
+                disabled={loading}
+                min="0"
+                step="1"
+              />
+              {errors.age && <small className="form-error">{errors.age}</small>}
+            </div>
+            <div>
+              <label className="form-label">Weight (lbs)</label>
+              <input
+                type="number"
+                name="weight"
+                value={formData.weight}
+                onChange={handleInputChange}
+                placeholder="e.g., 25.5"
+                className="form-input"
+                disabled={loading}
+                min="0"
+                step="0.1"
+              />
+              {errors.weight && <small className="form-error">{errors.weight}</small>}
+            </div>
+          </div>
+
+          {/* Breed */}
+          <div className="form-group">
+            <label className="form-label">Breed</label>
+            <input
+              type="text"
+              name="breed"
+              value={formData.breed}
+              onChange={handleInputChange}
+              placeholder="e.g., Golden Retriever"
               className="form-input"
               disabled={loading}
-              min="0"
-              step="1"
             />
-            {errors.age && <small className="form-error">{errors.age}</small>}
+            {errors.breed && <small className="form-error">{errors.breed}</small>}
           </div>
-          <div>
-            <label className="form-label">Weight (lbs)</label>
-            <input
-              type="number"
-              name="weight"
-              value={formData.weight}
+
+          {/* Special Instructions */}
+          <div className="form-group">
+            <label className="form-label">Special Instructions</label>
+            <textarea
+              name="specialInstructions"
+              value={formData.specialInstructions}
               onChange={handleInputChange}
-              placeholder="e.g., 25.5"
-              className="form-input"
+              className="form-textarea"
+              placeholder="Any special care instructions, dietary needs, medications, etc."
+              rows="3"
               disabled={loading}
-              min="0"
-              step="0.1"
             />
-            {errors.weight && <small className="form-error">{errors.weight}</small>}
           </div>
-        </div>
 
-        {/* Breed */}
-        <div className="form-group">
-          <label className="form-label">Breed</label>
-          <input
-            type="text"
-            name="breed"
-            value={formData.breed}
-            onChange={handleInputChange}
-            placeholder="e.g., Golden Retriever"
-            className="form-input"
-            disabled={loading}
-          />
-          {errors.breed && <small className="form-error">{errors.breed}</small>}
-        </div>
+          {/* Submit Error */}
+          {errors.submit && (
+            <div className="alert alert-error">
+              {errors.submit}
+            </div>
+          )}
 
-        {/* Special Instructions */}
-        <div className="form-group">
-          <label className="form-label">Special Instructions</label>
-          <textarea
-            name="specialInstructions"
-            value={formData.specialInstructions}
-            onChange={handleInputChange}
-            className="form-textarea"
-            placeholder="Any special care instructions, dietary needs, medications, etc."
-            rows="3"
-            disabled={loading}
-          />
-        </div>
-
-        {/* Submit Error */}
-        {errors.submit && <div className="alert alert-error">{errors.submit}</div>}
-
-        {/* Buttons */}
-        <div className="modal-footer">
-          <button className="btn btn-cancel" onClick={handleClose} disabled={loading}>
-            Cancel
-          </button>
-          <button className="btn btn-submit" onClick={handleSubmit} disabled={loading}>
-            {loading ? (
-              <>
-                <div className="spinner" />
-                Adding...
-              </>
-            ) : (
-              <>
-                <PawPrint size={14} />
-                Add Pet
-              </>
-            )}
-          </button>
-        </div>
+          {/* Buttons */}
+          <div className="modal-footer">
+            <button 
+              type="button" 
+              className="btn btn-cancel" 
+              onClick={handleClose} 
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-submit" 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="spinner" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <PawPrint size={14} />
+                  Add Pet
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
