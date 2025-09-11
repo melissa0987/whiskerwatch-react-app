@@ -178,9 +178,7 @@ const Dashboard = () => {
       
       <div className="dashboard-container">
         <div className="dashboard-sidebar">
-          <div className="sidebar-header">
-            <h2>Dashboard</h2>
-            <p>Welcome back, {user.firstName}!</p>
+          <div className="sidebar-header">  
           </div>
           
           <nav className="sidebar-nav">

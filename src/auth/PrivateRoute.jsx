@@ -21,7 +21,6 @@ const PrivateRoute = ({ children, requireAuth = true, fallback = null }) => {
     return fallback || <div>You are already logged in.</div>;
   }
 
-  // Render children if conditions are met
   return children;
 };
 

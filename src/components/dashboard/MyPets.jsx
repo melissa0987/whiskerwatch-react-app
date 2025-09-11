@@ -57,14 +57,14 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, refreshData }) => {
   const handleAddPetSuccess = async (successMessage) => {
     showMessage(successMessage, "success");
     setShowAddModal(false);
-    await refreshData(); // Use the single refresh function
+    await refreshData(); 
   };
 
   const handleEditPetSuccess = async (successMessage) => {
     showMessage(successMessage, "success");
     setShowEditModal(false);
     setSelectedPet(null);
-    await refreshData(); // Use the single refresh function
+    await refreshData(); 
   };
 
   const handleEditPet = (pet) => {
@@ -84,7 +84,7 @@ const MyPets = ({ user, pets, error, getPetTypeDisplay, refreshData }) => {
       
       if (response.success) {
         showMessage(response.data?.message || `${petName} has been deleted successfully.`, "success");
-        await refreshData(); // Use the single refresh function
+        await refreshData(); 
       } else {
         showMessage(`Failed to delete pet: ${response.message || "Unknown error"}`, "error");
       }

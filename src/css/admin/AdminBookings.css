@@ -1,0 +1,328 @@
+/* src/css/admin/AdminBookings.css */
+
+.admin-bookings {
+  padding: 15px;
+}
+
+/* Bookings Table Specific Styles */
+.bookings-table {
+  font-size: 14px;
+}
+
+.bookings-table th {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.bookings-table td {
+  vertical-align: middle;
+}
+
+/* Booking Details Column */
+.booking-details {
+  min-width: 115px;
+}
+
+.booking-id {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.pet-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.pet-info strong {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.booking-type {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Participants Column */
+.participants {
+  min-width: 200px;
+}
+
+.participant {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.participant.owner {
+  padding: 6px 8px;
+  background: #dbeafe;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.participant.sitter {
+  padding: 6px 8px;
+  background: #f3e8ff;
+  border-radius: 6px;
+}
+
+.participant-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.participant-email {
+  font-size: 11px;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.no-sitter {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 6px 8px;
+  background: #f3f4f6;
+  border-radius: 6px;
+}
+
+/* Schedule Column */
+.schedule {
+  min-width: 140px;
+}
+
+.schedule-date,
+.schedule-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #374151;
+}
+
+/* Status Column */
+.booking-status {
+  min-width: 120px;
+  justify-content: center;
+}
+
+.booking-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.booking-status.confirmed {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.booking-status.in_progress,
+.booking-status.in-progress {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.booking-status.completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.booking-status.cancelled {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.booking-status.rejected {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Cost Column */
+.cost-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.cost-amount {
+  font-weight: 600;
+  color: #059669;
+}
+
+.no-cost {
+  font-size: 12px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Booking Modal */
+.booking-modal {
+  max-width: 900px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.booking-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.detail-section {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.detail-section h4 {
+  margin: 0 0 16px 0;
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #d1d5db;
+  padding-bottom: 8px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.detail-item strong {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-section.full-width {
+  grid-column: 1 / -1;
+}
+
+.special-requests-content {
+  background: white;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* Admin Actions */
+.admin-actions {
+  background: #fef9e7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.admin-actions h4 {
+  margin: 0 0 16px 0;
+  color: #92400e;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.status-update-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.status-update-controls label {
+  font-weight: 600;
+  color: #92400e;
+  font-size: 14px;
+}
+
+.status-select {
+  padding: 8px 12px;
+  border: 1px solid #d97706;
+  border-radius: 6px;
+  background: white;
+  color: #92400e;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* Filter Controls Enhancement */
+.filter-controls .filter-group {
+  min-width: 140px;
+}
+
+.filter-controls .sort-group {
+  min-width: 160px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .admin-table-container {
+    overflow-x: auto;
+  }
+  
+  .bookings-table {
+    min-width: 900px;
+  }
+}
+
+@media (max-width: 768px) {
+  .booking-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .status-update-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .status-select {
+    min-width: auto;
+  }
+  
+  .bookings-table {
+    min-width: 1000px;
+  }
+  
+  .participants {
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-bookings {
+    padding: 16px;
+  }
+  
+  .booking-modal {
+    width: 98%;
+  }
+  
+  .admin-actions {
+    padding: 16px;
+  }
+}

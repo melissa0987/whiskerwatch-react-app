@@ -147,7 +147,7 @@ const Bookings = ({
 
     setUpdating(true);
     try {
-      // Prepare update data - only include fields that should be updated by owners
+     
       const updateData = {
         bookingDate: editFormData.bookingDate,
         startTime: `${editFormData.startTime}:00`,
@@ -156,8 +156,8 @@ const Bookings = ({
         totalCost: editFormData.totalCost ? parseFloat(editFormData.totalCost) : null,
         specialRequests: editFormData.specialRequests || null,
         petId: editingRequest.petId,
-        ownerId: user.id, // Use current user's ID
-        sitterId: editingRequest.sitterId || null // Preserve existing sitterId or null for pending
+        ownerId: user.id, // 
+        sitterId: editingRequest.sitterId || null 
       };
 
       console.log('Updating booking with data:', updateData);
@@ -188,7 +188,7 @@ const Bookings = ({
   const handleDeleteClick = (booking, isGroup = false) => {
     if (!booking) return;
     
-    // Add validation to ensure we have valid IDs
+    
     if (isGroup) {
       if (!booking.bookingIds || booking.bookingIds.length === 0) {
         console.error('Cannot delete group booking: no booking IDs found');
@@ -266,12 +266,12 @@ const Bookings = ({
     bookings.forEach(booking => {
       if (!booking) return;
       
-      // Try different possible ID property names
+      
       const bookingId = booking.id || booking.bookingId || booking.bookingNumber;
       
       if (!bookingId) {
         console.error('No valid booking ID found in booking object:', booking);
-        return; // Skip this booking
+        return; 
       }
       
       const key = `${booking.bookingDate || 'unknown'}_${booking.startTime || 'unknown'}_${booking.endTime || 'unknown'}_${booking.specialRequests || 'none'}`;
@@ -291,7 +291,7 @@ const Bookings = ({
     return Object.values(groups);
   };
 
-  // Safety check for bookings array
+  
   if (!Array.isArray(bookings)) {
     return (
       <div>

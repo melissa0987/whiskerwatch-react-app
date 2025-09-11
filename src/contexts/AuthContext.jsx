@@ -95,7 +95,6 @@ export const AuthProvider = ({ children }) => {
         
         if (isValid) {
           // Token is valid but we need user data
-          // For now, just set loading to false and let login handle user data
           dispatch({
             type: AUTH_ACTIONS.SET_LOADING,
             payload: { isLoading: false },
@@ -190,7 +189,7 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
   };
 
-  // Update user data - PRESERVE existing user data
+  // Update user data
   const updateUser = (updatedUserData) => {
     console.log('Updating user data:', updatedUserData);
     console.log('Current user before update:', state.user);

@@ -75,7 +75,7 @@ const SitterView = ({
     }
   }, [user]);
 
-  // ðŸ”¹ Accept & Reject Handlers
+  //  Accept & Reject Handlers
   const handleAcceptRequest = async (request) => {
     setProcessingRequest(request.id);
     setActionMessage('');
@@ -114,7 +114,7 @@ const SitterView = ({
     }
   };
 
-  // ðŸ”¹ Helper: Format
+  //  Helper: Format
   const formatOwnerName = (firstName, lastName) => {
     return (firstName || '') + ' ' + (lastName || '') || 'Pet Owner';
   };

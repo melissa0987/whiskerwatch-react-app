@@ -17,10 +17,17 @@ const Footer = ({ currentUser }) => (
           <p>Welcome back, {currentUser.firstName}! Your pets are in safe hands.</p>
           <div className="user-footer-info">
             <div className="account-type">
-              <Heart size={16} />
-              Account: {currentUser.customerTypeId === 1 ? 'Pet Owner' : 
-                       currentUser.customerTypeId === 2 ? 'Pet Sitter' : 'Owner & Sitter'}
-            </div>
+                <Heart size={16} />
+                Account: {currentUser.role === 'ADMIN' ? (
+                  'Administrator'
+                ) : currentUser.role === 'CUSTOMER' ? (
+                  currentUser.customerTypeId === 1 ? 'Pet Owner' :
+                  currentUser.customerTypeId === 2 ? 'Pet Sitter' :
+                  'Owner & Sitter'
+                ) : (
+                  'Unknown Role'
+                )}
+              </div>
             <div className="support-info">
               <div><Phone size={16} /> Need help? Call 1-800-WHISKER</div>
               <div><Mail size={16} /> support@whiskerwatch.com</div>
