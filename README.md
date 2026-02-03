@@ -1,12 +1,44 @@
-# React + Vite
+# WhiskerWatch - React Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern React application for connecting pet owners with verified pet sitters. This is the client-side interface for the WhiskerWatch platform.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React** - Component-based UI framework
+- **Vite** - Fast build tool and dev server
+- **JavaScript/JSX** - Core programming language
+- **CSS** - Custom styling
+- **ESLint** - Code quality and consistency
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Responsive user interface for pet owners and sitters
+- Real-time booking management
+- User authentication and profiles
+- Search and filter functionality for pet sitters
+- Modern, mobile-friendly design
+
+## Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Related Projects
+
+- [WhiskerWatch Backend](https://github.com/melissa0987/whiskerwatch) - Spring Boot REST API and PostgreSQL database
+
+## Development
+
+Built with Vite for optimal development experience with Hot Module Replacement (HMR) and fast refresh capabilities.
+
+## License
+
+MIT
