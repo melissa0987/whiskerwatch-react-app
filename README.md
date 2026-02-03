@@ -41,8 +41,6 @@ This front-end requires the backend API to function:
 
 - [WhiskerWatch Backend](https://github.com/melissa0987/whiskerwatch) - Spring Boot REST API and PostgreSQL database
 
-Check API URL in .env (e.g., VITE_API_URL=http://localhost:5000/api)
-
 Make sure the backend is running before testing frontend functionality
 
 
