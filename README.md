@@ -21,19 +21,30 @@ A modern React application for connecting pet owners with verified pet sitters. 
 ## Setup
 
 ```bash
+# Clone Project
+git clone https://github.com/melissa0987/whiskerwatch-react-app.git
+cd whiskerwatch-react-app
+
 # Install dependencies
 npm install
 
 # Run development server
 npm run dev
+Visit 'http://localhost:5173' to see the app running locally.
 
 # Build for production
 npm run build
 ```
+## Backend Integration
 
-## Related Projects
+This front-end requires the backend API to function:
 
 - [WhiskerWatch Backend](https://github.com/melissa0987/whiskerwatch) - Spring Boot REST API and PostgreSQL database
+
+Check API URL in .env (e.g., VITE_API_URL=http://localhost:5000/api)
+
+Make sure the backend is running before testing frontend functionality
+
 
 ## Development
 
